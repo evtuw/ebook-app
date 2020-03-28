@@ -1,0 +1,63 @@
+{
+  "name": "My_book",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "start": "react-native start",
+    "test": "jest",
+    "lint": "eslint .",
+    "build-a": "cd android & ./gradlew assembleRelease & cd .."
+  },
+  "dependencies": {
+    "@pontusab/react-native-image-manipulator": "https://github.com/pontusab/react-native-image-manipulator",
+    "@react-native-community/async-storage": "^1.8.0",
+    "@react-native-community/cameraroll": "^1.5.2",
+    "@react-native-community/masked-view": "^0.1.6",
+    "@react-native-community/viewpager": "^3.3.0",
+    "axios": "^0.19.2",
+    "lodash": "^4.17.15",
+    "moment": "^2.24.0",
+    "native-base": "^2.13.8",
+    "prop-types": "^15.7.2",
+    "react": "16.9.0",
+    "react-native": "0.61.5",
+    "react-native-camera-roll-picker": "^2.0.0",
+    "react-native-cardview": "^2.0.5",
+    "react-native-fast-image": "^7.0.2",
+    "react-native-gesture-handler": "^1.6.0",
+    "react-native-image-crop-picker": "^0.28.0",
+    "react-native-image-gallery": "^2.1.5",
+    "react-native-linear-gradient": "^2.5.6",
+    "react-native-modal": "^11.5.4",
+    "react-native-reanimated": "^1.7.0",
+    "react-native-responsive-screen": "^1.4.0",
+    "react-native-safe-area-context": "^0.7.3",
+    "react-native-screens": "^2.0.0-beta.10",
+    "react-native-swiper": "^1.5.14",
+    "react-native-tab-navigator": "^0.3.4",
+    "react-native-track-player": "^1.2.2",
+    "react-native-vector-icons": "^6.6.0",
+    "react-navigation": "^4.1.1",
+    "react-navigation-drawer": "^2.3.4",
+    "react-navigation-stack": "^2.1.1",
+    "react-redux": "^7.2.0",
+    "redux": "^4.0.5",
+    "redux-thunk": "^2.3.0",
+    "rn-placeholder": "^3.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.8.4",
+    "@babel/runtime": "^7.8.4",
+    "@react-native-community/eslint-config": "^0.0.7",
+    "babel-jest": "^25.1.0",
+    "eslint": "^6.8.0",
+    "jest": "^25.1.0",
+    "metro-react-native-babel-preset": "^0.58.0",
+    "react-test-renderer": "16.9.0"
+  },
+  "jest": {
+    "preset": "react-native"
+  }
+}
