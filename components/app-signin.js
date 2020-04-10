@@ -1,9 +1,16 @@
 import React from 'react';
-import {StatusBar, StyleSheet, ActivityIndicator} from 'react-native';
+import {
+  StatusBar,
+  StyleSheet,
+  ActivityIndicator,
+  Image,
+  Text,
+} from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
 import {Container, Content, View} from 'native-base';
 
 import storage from '../core/config/storage';
+import {Images} from '../src/assets/image';
 
 export default class AppSignIn extends React.Component {
   checkAccountStorage = async callback => {
@@ -24,7 +31,18 @@ export default class AppSignIn extends React.Component {
     let view;
     switch (type) {
       case 'loading':
-        view = <ActivityIndicator size={24} color="#2D9CDB" />;
+        view = (
+          <View>
+            <Image
+              source={Images.iconLogin2}
+              style={{width: 100, height: 100}}
+            />
+            <View style={{flexDirection: 'row', marginTop: 8}}>
+              <Text style={{fontWeight: 'bold'}}>SÁCH</Text>
+              <Text style={{fontWeight: 'bold'}}> ĐIỆN TỬ</Text>
+            </View>
+          </View>
+        );
         break;
       default:
         break;
@@ -32,7 +50,7 @@ export default class AppSignIn extends React.Component {
     return (
       <View style={{flex: 1}}>
         <View style={styles.loginView}>{view}</View>
-        <StatusBar backgroundColor="#FFF" barStyle={'dark-content'} />
+        <StatusBar backgroundColor="#FFF" barStyle={'dark-content'} animated />
       </View>
     );
   }

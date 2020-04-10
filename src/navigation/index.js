@@ -19,6 +19,14 @@ import ListComment from '../pages/List/list-comment';
 import Viewall from '../pages/BookDetail/Viewall';
 import NewDetail from '../pages/NewDetail/NewDetail';
 import CreatePost from '../pages/Social/create-post';
+import EditProfile from '../pages/Auth/edit-profile';
+import TutorialCard from '../pages/tutorial-card';
+import ListStoreBook from '../pages/StoreBook/list-store-book';
+import ListBookSelling from '../pages/StoreBook/list-book-selling';
+import AddNewStore from '../pages/StoreBook/add-bookstores';
+import AddNewBook from '../pages/StoreBook/add-book';
+import MyBillBook from '../pages/StoreBook/my-bill-book';
+import DetailBook from '../pages/StoreBook/detail-book';
 
 const stackNavigator = {
   HomeScreen: {
@@ -65,6 +73,30 @@ const stackNavigator = {
   },
   CreatePostScreen: {
     screen: CreatePost,
+  },
+  EditProfileScreen: {
+    screen: EditProfile,
+  },
+  TutorialCardScreen: {
+    screen: TutorialCard,
+  },
+  ListStoreScreen: {
+    screen: ListStoreBook,
+  },
+  ListBookSelling: {
+    screen: ListBookSelling,
+  },
+  AddNewStoreScreen: {
+    screen: AddNewStore,
+  },
+  AddNewBookScreen: {
+    screen: AddNewBook,
+  },
+  MyBillBookScreen: {
+    screen: MyBillBook,
+  },
+  DetailBookScreen: {
+    screen: DetailBook,
   },
 };
 const stackScreens = createStackNavigator(stackNavigator, {

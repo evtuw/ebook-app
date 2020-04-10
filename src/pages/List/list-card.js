@@ -22,6 +22,7 @@ import {Images} from '../../assets/image';
 import {formatNumber} from '../../../components/until';
 import {accountActionTypes} from '../../actions/type';
 import {LazyLoadingProduct} from '../../../components/lazy-load';
+import {saveAccountInfo} from '../../config/storage';
 
 class ListCard extends PureComponent {
   constructor(props) {
@@ -42,7 +43,7 @@ class ListCard extends PureComponent {
 
   getData = async () => {
     const {accountInfo} = this.props;
-    this.setState({lazy: true});
+    this.setState({lazy: true, data: []});
     try {
       const response = await getFromServer(getApiUrl(API.LIST_CARD), {
         token: accountInfo.access_token.token,
@@ -64,14 +65,15 @@ class ListCard extends PureComponent {
   selectCard = item => {
     const {data, select} = this.state;
     const {accountInfo} = this.props;
-    if (accountInfo.coin < Number(item.money)) {
+    console.log(accountInfo.coin);
+    if (Number(accountInfo.coin) < Number(item.money.replace('.', ''))) {
       Toast.show({
         text: 'Số điểm hiện tại của bạn không đủ',
         position: 'center',
         duration: 2500,
         type: 'warning',
       });
-      // return;
+      return;
     }
     if (select === item.id) {
       this.setState({select: null, infoCard: null});
@@ -91,12 +93,9 @@ class ListCard extends PureComponent {
         status: 1,
       });
       if (response.status === 1) {
-        const newCoin = Number(accountInfo.coin) - Number(infoCard.money);
-        accountInfo = {...accountInfo, coin: newCoin};
-        this.props.dispatchParams(
-          accountInfo,
-          accountActionTypes.APP_USER_INFO,
-        );
+        const newCoin =
+          accountInfo.coin - Number(infoCard.money.replace('.', ''));
+        this.updateCoin(newCoin);
         this.setState({success: true});
       }
     } catch (e) {
@@ -106,8 +105,34 @@ class ListCard extends PureComponent {
     }
   };
 
+  updateCoin = async newCoin => {
+    const {accountInfo} = this.props;
+    try {
+      const response = await postToServer(getApiUrl(API.UPDATE_COIN), {
+        user_id: accountInfo.id,
+        token: accountInfo.access_token.token,
+        coin: newCoin,
+      });
+      if (response.status === 1) {
+        this.props.dispatchParams(
+          {
+            ...accountInfo,
+            coin: newCoin,
+          },
+          accountActionTypes.APP_USER_INFO,
+        );
+        saveAccountInfo({
+          ...accountInfo,
+          coin: newCoin,
+        });
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
   charge = phone => {
-    Linking.openURL(`tel:${phone}`);
+    Linking.openURL(`tel:*100*${phone}#`);
   };
 
   dismissSuccess = () => {
@@ -157,22 +182,13 @@ class ListCard extends PureComponent {
               height: 48,
               borderRadius: 6,
               width: setWidth('90%'),
-              backgroundColor: '#FFF',
-              shadowColor: '#000',
-              shadowOffset: {
-                width: 0,
-                height: 1,
-              },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 3,
               justifyContent: 'center',
               marginTop: 16,
             }}
             disabled>
             <Text style={{fontSize: 20, marginLeft: 16}}>
               Số seri:
-              <Text style={{color: '#2D9CDB'}}>{infoCard.serial}</Text>
+              <Text style={{color: '#00c068'}}>{infoCard.serial}</Text>
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -180,53 +196,66 @@ class ListCard extends PureComponent {
               height: 48,
               borderRadius: 6,
               width: setWidth('90%'),
-              backgroundColor: '#FFF',
-              shadowColor: '#000',
-              shadowOffset: {
-                width: 0,
-                height: 1,
-              },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 3,
               justifyContent: 'center',
               marginTop: 16,
             }}
             onPress={() => this.charge(infoCard.code)}>
             <Text style={{fontSize: 20, marginLeft: 16}}>
               Mã thẻ:
-              <Text style={{color: '#2D9CDB'}}>{infoCard.code}</Text>
+              <Text style={{color: '#00c068'}}>{infoCard.code}</Text>
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
+          <View
             style={{
-              height: 48,
-              borderRadius: 6,
-              width: setWidth('90%'),
-              backgroundColor: '#F2994a',
-              shadowColor: '#000',
-              shadowOffset: {
-                width: 0,
-                height: 1,
-              },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 3,
+              flexDirection: 'row',
+              alignItems: 'center',
               justifyContent: 'center',
-              marginTop: 32,
-            }}
-            onPress={this.dismissSuccess}>
-            <Text
+            }}>
+            <TouchableOpacity
               style={{
-                color: '#FFF',
-                textTransform: 'uppercase',
-                textAlign: 'center',
-                fontSize: 17,
-              }}>
-              Quay lại
-            </Text>
-          </TouchableOpacity>
+                height: 48,
+                borderRadius: 6,
+                width: setWidth('35%'),
+                backgroundColor: '#00c068',
+                justifyContent: 'center',
+                marginTop: 16,
+              }}
+              onPress={() => this.charge(infoCard.code)}>
+              <Text
+                style={{
+                  color: '#FFF',
+                  textTransform: 'uppercase',
+                  textAlign: 'center',
+                  fontSize: 17,
+                }}>
+                Nạp ngay
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                height: 48,
+                borderRadius: 6,
+                width: setWidth('35%'),
+                backgroundColor: '#FFF',
+                borderColor: '#00c068',
+                borderWidth: 1,
+                justifyContent: 'center',
+                marginTop: 16,
+                marginLeft: 16,
+              }}
+              onPress={this.dismissSuccess}>
+              <Text
+                style={{
+                  color: '#00c068',
+                  textTransform: 'uppercase',
+                  textAlign: 'center',
+                  fontSize: 17,
+                }}>
+                Quay lại
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
@@ -296,7 +325,7 @@ class ListCard extends PureComponent {
                     name="ios-checkmark-circle"
                     type="Ionicons"
                     style={{
-                      color: '#F2994A',
+                      color: '#00c068',
                       marginRight: 16,
                       fontSize: 18,
                       position: 'absolute',
@@ -316,7 +345,7 @@ class ListCard extends PureComponent {
               alignItems: 'center',
               justifyContent: 'center',
               height: 48,
-              backgroundColor: '#F2994A',
+              backgroundColor: '#00c068',
             }}
             onPress={this.skip}>
             {loading ? (

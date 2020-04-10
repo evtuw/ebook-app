@@ -1,4 +1,4 @@
-import React, {useEffect, Component} from 'react';
+import React, {PureComponent} from 'react';
 import {
   FlatList,
   Image,
@@ -9,10 +9,18 @@ import {
   View,
   ScrollView,
   Dimensions,
+  StatusBar,
 } from 'react-native';
 import Modal from 'react-native-modal';
-import CustomHeaderBack from '../../components/CustomHeaderBack';
-import {setWidth} from '../../cores/baseFuntion';
+import {connect} from 'react-redux';
+
+import HeaderComponent from '../../components/headerComponents';
+import {dispatchParams, postToServer} from '../../config';
+import {API, getApiUrl} from '../../config/server';
+import {accountActionTypes} from '../../actions/type';
+import {Images} from '../../assets/image';
+import {setHeight} from '../../cores/baseFuntion';
+import {saveAccountInfo} from '../../config/storage';
 // import TrackPlayer, {usePlaybackState} from 'react-native-track-player';
 
 const dataColor = [
@@ -59,7 +67,7 @@ const dataFont = [
   },
 ];
 
-export default class Viewall extends Component {
+class Viewall extends PureComponent {
   constructor(props) {
     super(props);
     this.state = {
@@ -67,35 +75,113 @@ export default class Viewall extends Component {
       showColor: false,
       size: 18,
       color: 'black',
-      theme: 'white',
+      theme: {
+        backgroundColor: 'white',
+        style: 'dark-content',
+      },
+      showTheme: false,
+      modalCoin: false,
     };
   }
 
-  componentDidMount = () => {
-    setTimeout(() => {
-      console.warn('la');
-    }, 10000);
+  componentDidMount() {
+    // const TIMEOUT = 1000;
+    const TIMEOUT = 360000;
+    this.timeout = setTimeout(() => {
+      this.updateCoin();
+    }, TIMEOUT);
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.timeout);
+  }
+
+  updateCoin = async () => {
+    const {accountInfo} = this.props;
+    try {
+      const response = await postToServer(getApiUrl(API.UPDATE_COIN), {
+        user_id: accountInfo.id,
+        token: accountInfo.access_token.token,
+        coin: Number(accountInfo.coin) + 100,
+      });
+      if (response.status === 1) {
+        this.props.dispatchParams(
+          {
+            ...accountInfo,
+            coin: Number(accountInfo.coin) + 100,
+          },
+          accountActionTypes.APP_USER_INFO,
+        );
+        saveAccountInfo({
+          ...accountInfo,
+          coin: Number(accountInfo.coin) + 100,
+        });
+        this.setState({modalCoin: true});
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  goBack = () => {
+    const {navigation} = this.props;
+    navigation.goBack();
+  };
+
+  changeTheme = type => {
+    let theme = {
+      backgroundColor: 'white',
+      style: 'dark-content',
+    };
+    if (type === 'dark') {
+      theme = {
+        backgroundColor: 'black',
+        style: 'light-content',
+      };
+      this.setState({theme, color: 'white', showTheme: false});
+      return;
+    }
+    this.setState({theme, color: 'black', showTheme: false});
   };
 
   render() {
     const {navigation} = this.props;
-    const {showFont, showColor, size, color, theme} = this.state;
+    const {
+      showFont,
+      showColor,
+      size,
+      color,
+      theme,
+      showTheme,
+      modalCoin,
+    } = this.state;
     const {data} = navigation.state.params;
     return (
-      <View style={styles.saf}>
-        <CustomHeaderBack
-          iconRightStyle={{fontSize: 35}}
+      <View style={[styles.saf, {backgroundColor: theme.backgroundColor}]}>
+        <StatusBar
+          animated
+          backgroundColor={theme.backgroundColor}
+          barStyle={theme.style}
+        />
+        <HeaderComponent
+          navigation={navigation}
+          left
+          right
+          style={{
+            marginTop: StatusBar.currentHeight,
+            backgroundColor: theme.backgroundColor,
+          }}
           iconLeft="ios-arrow-back"
-          typeIconRight="EvilIcons"
+          iconLeftType="Ionicons"
           title={data.title}
-          onPressLeft={() => navigation.goBack()}
+          onPressLeft={this.goBack}
         />
         <View
           style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-            paddingHorizontal: 32,
+            paddingHorizontal: 16,
             paddingVertical: 16,
           }}>
           <TouchableOpacity
@@ -103,22 +189,41 @@ export default class Viewall extends Component {
               flexDirection: 'row',
               alignItems: 'center',
               flex: 1,
+              backgroundColor: 'rgba(255, 46, 84, 0.13)',
+              borderRadius: 4,
+              padding: 6,
+              justifyContent: 'center',
             }}
             onPress={() => this.setState({showFont: true})}>
-            <Text style={{fontSize: 16}}>Cỡ chữ: </Text>
-            <Text>{size}</Text>
+            <Text style={{fontSize: 14, color: '#ff2e54'}}>Cỡ chữ: </Text>
+            <Text style={{color: '#ff2e54'}}>{size}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => this.setState({showColor: true})}
-            style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
-            <Text style={{fontSize: 16}}>Màu chữ: </Text>
-            <Text>{color.toUpperCase()}</Text>
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              flex: 1,
+              backgroundColor: 'rgba(255, 46, 84, 0.13)',
+              borderRadius: 4,
+              marginHorizontal: 8,
+              padding: 6,
+              justifyContent: 'center',
+            }}>
+            <Text style={{fontSize: 14, color: '#ff2e54'}}>Màu chữ</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => this.setState({showColor: true})}
-            style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
-            <Text style={{fontSize: 16}}>Giao diện: </Text>
-            <Text>{theme.toUpperCase()}</Text>
+            onPress={() => this.setState({showTheme: true})}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              flex: 1,
+              backgroundColor: 'rgba(255, 46, 84, 0.13)',
+              borderRadius: 4,
+              padding: 6,
+              justifyContent: 'center',
+            }}>
+            <Text style={{fontSize: 14, color: '#ff2e54'}}>Giao diện</Text>
           </TouchableOpacity>
         </View>
         <ScrollView>
@@ -128,6 +233,84 @@ export default class Viewall extends Component {
             {data.content}
           </Text>
         </ScrollView>
+        <Modal
+          isVisible={showTheme}
+          backdropOpacity={0.5}
+          backdropColor="#000"
+          animationIn="fadeIn"
+          animationOut="fadeOut"
+          animationInTiming={300}
+          animationOutTiming={300}
+          backdropTransitionInTiming={300}
+          backdropTransitionOutTiming={300}
+          useNativeDriver
+          hideModalContentWhileAnimating
+          onBackdropPress={() => this.setState({showTheme: false})}
+          onBackButtonPress={() => this.setState({showTheme: false})}
+          style={styles.modal}>
+          <View
+            style={{
+              width: Dimensions.get('window').width - 30,
+              height: 150,
+              backgroundColor: 'whitesmoke',
+              borderRadius: 4,
+            }}>
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'row',
+              }}>
+              <TouchableOpacity
+                style={{
+                  borderRadius: 6,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onPress={() => this.changeTheme('light')}>
+                <View
+                  style={{
+                    width: 150,
+                    backgroundColor: '#FFF',
+                    margin: 8,
+                    padding: 8,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <Text numberOfLines={4}>
+                    Lorem Ipsum has been the industry's standard dummy text ever
+                    since the 1500s, when an unknown printer took a galley of
+                    type and scrambled it to make a type specimen book.
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  borderRadius: 6,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onPress={() => this.changeTheme('dark')}>
+                <View
+                  style={{
+                    width: 150,
+                    backgroundColor: '#000',
+                    margin: 8,
+                    padding: 8,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <Text style={{color: '#FFF'}} numberOfLines={4}>
+                    Lorem Ipsum has been the industry's standard dummy text ever
+                    since the 1500s, when an unknown printer took a galley of
+                    type and scrambled it to make a type specimen book.
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
         <Modal
           isVisible={showColor}
           backdropOpacity={0.5}
@@ -150,16 +333,20 @@ export default class Viewall extends Component {
               backgroundColor: 'whitesmoke',
               borderRadius: 4,
             }}>
-            <View style={{flex: 1, flexWrap: 'wrap'}}>
+            <View
+              style={{
+                flex: 1,
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
               {dataColor.map(item => (
                 <TouchableOpacity
                   style={{
                     height: 32,
                     borderRadius: 6,
-                    backgroundColor: item.color.toLowerCase(),
+                    backgroundColor: '#D5E9FA',
                     alignItems: 'center',
-                    borderColor: '#2D9CDB',
-                    borderWidth: 1,
                     justifyContent: 'center',
                     margin: 8,
                     padding: 8,
@@ -168,8 +355,8 @@ export default class Viewall extends Component {
                   onPress={() =>
                     this.setState({color: item.color, showColor: false})
                   }>
-                  <Text style={{color: '#fff'}}>
-                    {item.color.toUpperCase()}
+                  <Text style={{color: item.color.toLowerCase()}}>
+                    {item.color.toLowerCase()}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -222,6 +409,73 @@ export default class Viewall extends Component {
             </View>
           </View>
         </Modal>
+        <Modal
+          isVisible={modalCoin}
+          backdropOpacity={0.5}
+          backdropColor="#000"
+          animationIn="fadeIn"
+          animationOut="fadeOut"
+          animationInTiming={300}
+          animationOutTiming={300}
+          backdropTransitionInTiming={300}
+          backdropTransitionOutTiming={300}
+          useNativeDriver
+          hideModalContentWhileAnimating
+          onBackdropPress={() => this.setState({modalCoin: false})}
+          onBackButtonPress={() => this.setState({modalCoin: false})}
+          style={styles.modal}>
+          <View
+            style={{
+              width: Dimensions.get('window').width - 30,
+              height: setHeight('52%'),
+              backgroundColor: '#FFF',
+              borderRadius: 4,
+              alignItems: 'center',
+            }}>
+            <View style={{flex: 1, alignItems: 'center'}}>
+              <Image
+                source={Images.coinSuccess}
+                style={{width: 200, height: 200}}
+              />
+              <Text style={{fontSize: 22}}>Điểm đọc sách !!!</Text>
+              <Text style={{fontSize: 28, textAlign: 'center'}}>100 điểm</Text>
+              <Text style={{paddingHorizontal: 8}}>
+                Đọc sách liền tay - Nhận ngay điểm thưởng
+              </Text>
+            </View>
+            <View style={{paddingVertical: 16}}>
+              <TouchableOpacity
+                style={{
+                  width: 200,
+                  height: 48,
+                  borderRadius: 6,
+                  borderColor: '#FF2D55',
+                  borderWidth: 1,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onPress={() => this.setState({modalCoin: false})}>
+                <Text style={{color: '#FF2D55', fontSize: 18}}>Đọc tiếp</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  width: 200,
+                  height: 48,
+                  borderRadius: 6,
+                  backgroundColor: '#FF2D55',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginTop: 8,
+                }}
+                onPress={() => {
+                  this.setState({modalCoin: false});
+                  navigation.navigate('ListCardScreen');
+                }}>
+                <Text style={{color: '#FFF', fontSize: 18}}>Đổi thẻ ngay</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -238,3 +492,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+const mapStateToProps = state => ({
+  accountInfo: state.accountReducer,
+});
+
+const matchDispatchToProps = dispatch => {
+  return {
+    dispatchParams: (data, type) => {
+      dispatch(dispatchParams(data, type));
+    },
+  };
+};
+
+export default connect(
+  mapStateToProps,
+  matchDispatchToProps,
+)(Viewall);

@@ -16,13 +16,13 @@ class AuthLoading extends AppSignIn {
       deviceId: '',
     };
   }
-  componentWillMount = async () => {
-    this.checkAccountStorage(this.callback);
-  };
+  async componentDidMount() {
+    await this.checkAccountStorage(this.callback);
+  }
 
   appSignOut = async () => {
-    await AsyncStorage.removeItem(storage.accountInfo);
     try {
+      await AsyncStorage.removeItem(storage.accountInfo);
       this.props.navigation.navigate('LoginStack', {
         msg: 'Log out',
       });

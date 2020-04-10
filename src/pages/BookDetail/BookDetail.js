@@ -10,20 +10,23 @@ import {
   Alert,
   ImageBackground,
   StatusBar,
+  RefreshControl,
+  DeviceEventEmitter,
+  ActivityIndicator,
 } from 'react-native';
 import {Icon} from 'native-base';
 import {connect} from 'react-redux';
 import {setWidth} from '../../cores/baseFuntion';
 import {ScrollView} from 'react-native-gesture-handler';
 import CardView from 'react-native-cardview';
-import FastImage from 'react-native-fast-image';
-import {dispatchParams, getFromServer} from '../../config';
+import {dispatchParams, getFromServer, postToServer} from '../../config';
 import {API, getApiUrl, HOST_IMAGE_UPLOAD} from '../../config/server';
 import {Images} from '../../assets/image';
 import {formatDateNow} from '../../../components/until';
 import {setCoinInDay} from '../../actions/action';
-import {saveAccountInfo} from '../../config/storage';
-import {accountActionTypes} from '../../actions/type';
+import HomeLatest from '../List/home-latest';
+import LazyDetailBook from '../../../components/lazy-load/lazy-detail-book';
+
 class BookDetail extends Component {
   constructor(props) {
     super(props);
@@ -31,6 +34,11 @@ class BookDetail extends Component {
       isModalVisible: false,
       check: false,
       data: {},
+      book_cate: [],
+      book_author: [],
+      lazyLoad: true,
+      loading: false,
+      isFavorite: false,
     };
   }
 
@@ -38,6 +46,10 @@ class BookDetail extends Component {
     const {navigation} = this.props;
     const {id: book_id} = navigation.state.params;
     this.getData(book_id);
+    this.getListFavorite();
+    this.listener = DeviceEventEmitter.addListener('LoadData', () =>
+      this.onRefresh(),
+    );
   };
 
   getData = async book_id => {
@@ -47,37 +59,150 @@ class BookDetail extends Component {
         token: accountInfo.access_token.token,
         book_id,
       });
-      this.setState({data: response.data[0]});
+      const allPromise = [
+        this.getBookByCategory(response.data[0]?.category_id),
+        this.getBookByAuthor(response.data[0].author_id),
+      ];
+      const [book_cate, book_author] = await Promise.all(allPromise);
+      this.setState({
+        data: response.data[0],
+        book_author: book_author.data.filter(
+          t => t.id !== response.data[0]?.id,
+        ),
+        book_cate: book_cate.data.filter(v => v.id !== response.data[0]?.id),
+      });
     } catch (e) {
       console.log(e);
     } finally {
+      this.setState({refreshing: false, lazyLoad: false});
     }
   };
 
-  readNow = () => {
-    const {navigation, accountInfo} = this.props;
-    const {data} = this.state;
-    let newCoin = accountInfo.coinInDay + 100;
-    this.props.setCoinInDay(newCoin);
-    this.props.dispatchParams(
-      {...accountInfo, coinInDay: newCoin, coin: accountInfo.coin + 100},
-      accountActionTypes.APP_USER_INFO,
-    );
-    saveAccountInfo({
-      ...accountInfo,
-      coinInDay: newCoin,
-      coin: accountInfo.coin + 100,
+  getBookByCategory = categoryId => {
+    const {accountInfo} = this.props;
+    return new Promise(resolve => {
+      const response = getFromServer(getApiUrl(API.BOOK_BY_CATEGORY), {
+        token: accountInfo.access_token.token,
+        cat_id: categoryId,
+        page: 1,
+        page_size: 5,
+      });
+      return resolve(response);
     });
-    navigation.navigate('ViewAllBookScreen', {data});
   };
+
+  getBookByAuthor = authorId => {
+    const {accountInfo} = this.props;
+    return new Promise(resolve => {
+      const response = getFromServer(getApiUrl(API.BOOK_BY_AUTHOR), {
+        token: accountInfo.access_token.token,
+        author_id: authorId,
+        page: 1,
+        page_size: 5,
+      });
+      return resolve(response);
+    });
+  };
+
+  readNow = () => {
+    const {navigation} = this.props;
+    const {data} = this.state;
+    navigation.navigate('ViewAllBookScreen', {data});
+    this.recentBook(data.id);
+  };
+
+  recentBook = async book_id => {
+    const {accountInfo} = this.props;
+    try {
+      await postToServer(getApiUrl(API.ADD_TO_RECENT), {
+        user_id: accountInfo.id,
+        book_id,
+        token: accountInfo.access_token.token,
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  getListFavorite = async () => {
+    const {accountInfo, navigation} = this.props;
+    const {id: book_id} = navigation.state.params;
+    try {
+      const response = await getFromServer(getApiUrl(API.BOOK_FAVORITE), {
+        token: accountInfo.access_token.token,
+        user_id: accountInfo.id,
+      });
+      if (response) {
+        const favorite = response.data?.find(v => v.id === book_id);
+
+        this.setState({isFavorite: !!favorite});
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  getDetailBook = book_id => {
+    this.setState({lazyLoad: true});
+    this.getData(book_id);
+  };
+
+  addToFavorite = async () => {
+    const {accountInfo} = this.props;
+    const {data} = this.state;
+    this.setState({loading: true});
+    try {
+      const response = await postToServer(getApiUrl(API.ADD_TO_FAVORITE), {
+        user_id: accountInfo.id,
+        book_id: data.id,
+        token: accountInfo.access_token.token,
+      });
+      if (response.status === 1) {
+        this.getListFavorite();
+      }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      this.setState({loading: false});
+    }
+  };
+
+  onRefresh = () => {
+    const {navigation} = this.props;
+    const {id: book_id} = navigation.state.params;
+    this.setState({refreshing: true}, () => this.getData(book_id));
+  };
+
+  refreshControl() {
+    const {refreshing} = this.state;
+    return (
+      <RefreshControl refreshing={refreshing} onRefresh={this.onRefresh} />
+    );
+  }
 
   render() {
     const {navigation} = this.props;
-    const {data} = this.state;
+    const {
+      data,
+      refreshing,
+      book_cate,
+      book_author,
+      lazyLoad,
+      loading,
+      isFavorite,
+    } = this.state;
+    if (lazyLoad) return <LazyDetailBook />;
     return (
       <View style={styles.saf}>
-        <StatusBar translucent backgroundColor="transparent" animated barStyle="light-content" />
-        <ScrollView>
+        <StatusBar
+          translucent
+          backgroundColor="transparent"
+          animated
+          barStyle="light-content"
+        />
+        <ScrollView
+          refreshing={refreshing}
+          refreshControl={this.refreshControl()}>
           <ImageBackground
             style={styles.imageHeader}
             source={
@@ -106,7 +231,6 @@ class BookDetail extends Component {
                 </CardView>
                 <View style={styles.viewText}>
                   <Text style={styles.textName}>{data?.title}</Text>
-                  <Text style={styles.textAuthor}>Author</Text>
                 </View>
               </View>
             </View>
@@ -153,6 +277,28 @@ class BookDetail extends Component {
             {/*  <View />*/}
             {/*</View>*/}
           </View>
+          <View style={{marginBottom: 16}}>
+            <TouchableOpacity
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 16,
+                borderWidth: 1,
+                borderColor: '#00c068',
+              }}
+              onPress={this.addToFavorite}
+              disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color={'#00c068'} />
+              ) : (
+                <Text style={{color: '#00c068', fontSize: 16}}>
+                  {isFavorite
+                    ? 'Đã thêm vào danh sách yêu thích'
+                    : 'Thêm vào yêu thích'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
           <View style={styles.viewTrong} />
           <View style={styles.viewSp}>
             <Text style={styles.textTitle}>Mô tả</Text>
@@ -169,14 +315,16 @@ class BookDetail extends Component {
           <View style={styles.viewSp}>
             <View style={{flexDirection: 'row'}}>
               <Text style={[styles.textTitle, {flex: 1}]}>Bình luận</Text>
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate('ListCommentScreen', {id: data.id})
-                }>
-                <Text style={{color: '#F2994A', marginRight: 16}}>
-                  Xem thêm
-                </Text>
-              </TouchableOpacity>
+              {data.user_comments && data.user_comments.length > 3 && (
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate('ListCommentScreen', {id: data.id})
+                  }>
+                  <Text style={{color: '#00c068', marginRight: 16}}>
+                    Xem thêm
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
             <FlatList
               data={data?.user_comments}
@@ -194,7 +342,7 @@ class BookDetail extends Component {
                   <Image
                     source={
                       item.avatar
-                        ? {uri: HOST_IMAGE_UPLOAD + item.avatar}
+                        ? {uri: HOST_IMAGE_UPLOAD + JSON.parse(item.avatar)[0]}
                         : Images.avatarDefault
                     }
                     style={{
@@ -220,6 +368,34 @@ class BookDetail extends Component {
               keyExtractor={() => String(Math.random())}
             />
           </View>
+
+          {book_author?.length > 0 && (
+            <View style={styles.viewSp}>
+              <Text style={[styles.textTitle, {flex: 1}]}>
+                Sách cùng tác giả
+              </Text>
+              <HomeLatest
+                data={book_author}
+                navigation={navigation}
+                horizontal
+                getDetailBook={this.getDetailBook}
+              />
+            </View>
+          )}
+
+          {book_cate?.length > 0 && (
+            <View style={styles.viewSp}>
+              <Text style={[styles.textTitle, {flex: 1}]}>
+                Sách cùng thể loại
+              </Text>
+              <HomeLatest
+                data={book_cate}
+                navigation={navigation}
+                horizontal
+                getDetailBook={this.getDetailBook}
+              />
+            </View>
+          )}
         </ScrollView>
         <View style={styles.viewFooter}>
           <TouchableOpacity style={styles.toRead} onPress={this.readNow}>
@@ -228,12 +404,12 @@ class BookDetail extends Component {
           <TouchableOpacity
             style={[
               styles.toRead,
-              {backgroundColor: '#FFF', borderColor: '#2D9CDB', borderWidth: 1},
+              {backgroundColor: '#FFF', borderColor: '#00c068', borderWidth: 1},
             ]}
             onPress={() =>
               navigation.navigate('ListCommentScreen', {id: data.id})
             }>
-            <Text style={{color: '#000'}}>XEM BÌNH LUẬN</Text>
+            <Text style={{color: '#00c068'}}>XEM BÌNH LUẬN</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -273,7 +449,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: setWidth('3%'),
   },
   viewText: {
-    width: setWidth('66%'),
+    width: setWidth('50%'),
     marginTop: setWidth('5%'),
   },
   cardView: {
@@ -422,7 +598,7 @@ const styles = StyleSheet.create({
   toRead: {
     width: setWidth('80%'),
     height: setWidth('11%'),
-    backgroundColor: '#2D9CDB',
+    backgroundColor: '#00c068',
     borderRadius: setWidth('2%'),
     alignItems: 'center',
     justifyContent: 'center',

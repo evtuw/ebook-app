@@ -34,16 +34,22 @@ export default class HeaderComponent extends Component {
       iconRightType,
       onPressLeft,
       onPressRight,
+      style,
+      icStyle,
     } = this.props;
     const {navigate} = navigation;
     return (
-      <View style={[styles.container]}>
+      <View style={[styles.container, style]}>
         {left ? (
           <TouchableOpacity
             style={{paddingLeft: 16, marginTop: 10}}
             hitSlop={{top: 10, left: 10, right: 10, bottom: 10}}
             onPress={onPressLeft}>
-            <Icon name={iconLeft} type={iconLeftType} style={{fontSize: 24}} />
+            <Icon
+              name={iconLeft}
+              type={iconLeftType}
+              style={{fontSize: 24, color: icStyle || '#00c068'}}
+            />
           </TouchableOpacity>
         ) : (
           <View />
@@ -52,7 +58,7 @@ export default class HeaderComponent extends Component {
           style={{
             textAlign: 'center',
             fontSize: 20,
-            color: '#ff2e54',
+            color: '#00c068',
             flex: 1,
           }}>
           {title}

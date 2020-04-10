@@ -19,7 +19,7 @@ class ImageTile extends React.PureComponent {
             style={{
               width: width / 4,
               height: width / 4,
-              borderColor: 'red',
+              borderColor: 'white',
               borderWidth: 0.5,
             }}
             source={{uri: item.image.uri}}
@@ -28,7 +28,7 @@ class ImageTile extends React.PureComponent {
             <View
               style={{
                 flex: 1,
-                backgroundColor: '#1a89cc',
+                backgroundColor: '#00c068',
                 width: 20,
                 height: 20,
                 borderRadius: 15,

@@ -27,7 +27,7 @@ export default StyleSheet.create({
     marginLeft: 11,
     fontFamily: 'SF Pro Text',
     color: '#1A051D',
-    fontSize: 16,
+    fontSize: 14,
     // lineHeight: 22,
     // fontWeight: '500'
     // width: '80%',

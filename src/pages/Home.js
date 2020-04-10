@@ -8,8 +8,8 @@ import {
   View,
   TextInput,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
-// import Swiper from 'react-native-swiper';
 // import TrackPlayer from 'react-native-track-player';
 
 import {ScrollView} from 'react-native-gesture-handler';
@@ -23,6 +23,7 @@ import HomePopular from './List/home-popular';
 import CategoryHome from './List/category-home';
 import AuthorHome from './List/author-home';
 import {LazyLoadingProduct} from '../../components/lazy-load';
+import {Images} from '../assets/image';
 
 class Home extends PureComponent {
   constructor(props) {
@@ -139,24 +140,21 @@ class Home extends PureComponent {
           refreshing={refreshing}
           refreshControl={this.refreshControl()}>
           <View
-            style={{flexDirection: 'row', margin: 24, alignItems: 'center'}}>
-            {accountInfo.avatar ? (
-              <Image source={{uri: HOST_IMAGE_UPLOAD + accountInfo.avatar}} />
-            ) : (
-              <View
-                style={{
-                  width: 60,
-                  height: 60,
-                  backgroundColor: this.getRandomColor(),
-                  borderRadius: 30,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                <Text style={{color: '#FFF', fontSize: 30}}>
-                  {this.getFirstNameLetter(accountInfo.name)}
-                </Text>
-              </View>
-            )}
+            style={{
+              flexDirection: 'row',
+              marginHorizontal: 24,
+              alignItems: 'center',
+              marginVertical: 8,
+            }}>
+            <Image
+              source={
+                accountInfo.avatar
+                  ? {uri: HOST_IMAGE_UPLOAD + JSON.parse(accountInfo.avatar)[0]}
+                  : Images.avatarDefault
+              }
+              style={{width: 60, height: 60, borderRadius: 30}}
+            />
+
             <View style={{flexDirection: 'row', marginHorizontal: 16}}>
               <Text style={{fontSize: 22, color: '#3F3356'}}>
                 {accountInfo?.name.substring(0, 5).trim()},{' '}
@@ -164,21 +162,21 @@ class Home extends PureComponent {
               <Text style={{fontSize: 22, color: '#3F3356'}}>{textHello}</Text>
             </View>
           </View>
-          <View style={{alignItems: 'center'}}>
-            <Text style={{color: '#3F3356', fontSize: 14}}>
-              Số coin kiếm được trong ngày
-            </Text>
-            <View style={{flexDirection: 'row'}}>
-              <Text style={{color: '#3F3356', fontSize: 20, marginTop: 8}}>
-                {accountInfo.coinInDay}
-              </Text>
-              <Icon
-                name="coin"
-                style={{color: '#f0a901', fontSize: 16}}
-                type="MaterialCommunityIcons"
-              />
-            </View>
-          </View>
+          {/*<View style={{alignItems: 'center'}}>*/}
+          {/*  <Text style={{color: '#3F3356', fontSize: 14}}>*/}
+          {/*    Số coin kiếm được trong ngày*/}
+          {/*  </Text>*/}
+          {/*  <View style={{flexDirection: 'row'}}>*/}
+          {/*    <Text style={{color: '#3F3356', fontSize: 20, marginTop: 8}}>*/}
+          {/*      {accountInfo.coinInDay}*/}
+          {/*    </Text>*/}
+          {/*    <Icon*/}
+          {/*      name="coin"*/}
+          {/*      style={{color: '#f0a901', fontSize: 16}}*/}
+          {/*      type="MaterialCommunityIcons"*/}
+          {/*    />*/}
+          {/*  </View>*/}
+          {/*</View>*/}
 
           <View style={{alignItems: 'center'}}>
             <View style={styles.viewSearch}>
@@ -194,6 +192,79 @@ class Home extends PureComponent {
             </View>
           </View>
 
+          <TouchableOpacity
+            style={{
+              paddingHorizontal: 16,
+              alignItems: 'center',
+              marginTop: 8,
+            }}>
+            <Image
+              source={Images.banner}
+              style={{
+                width: Dimensions.get('window').width - 32,
+                height: Dimensions.get('window').width / 2,
+                borderRadius: 16,
+                borderColor: '#ccc6',
+                borderWidth: 1,
+              }}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+
+          <View style={{marginHorizontal: 16, marginVertical: 16}}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <TouchableOpacity
+                style={{alignItems: 'center'}}
+                onPress={() => navigation.navigate('LatestScreen')}>
+                <Image
+                  source={Images.iconLatest}
+                  style={{width: 72, height: 72}}
+                />
+                <Text>Mới nhất</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{alignItems: 'center', marginLeft: 16}}
+                onPress={() => navigation.navigate('FeaturedScreen')}>
+                <Image
+                  source={Images.iconFeatured}
+                  style={{width: 72, height: 72}}
+                />
+                <Text>Đặc sắc</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{alignItems: 'center', marginLeft: 16}}
+                onPress={() => navigation.navigate('PopularScreen')}>
+                <Image
+                  source={Images.iconPopular}
+                  style={{width: 72, height: 72}}
+                />
+                <Text>Phổ biến</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{alignItems: 'center', marginLeft: 16}}
+                onPress={() => navigation.navigate('CategoryScreen')}>
+                <Image
+                  source={Images.iconCategory}
+                  style={{width: 72, height: 72}}
+                />
+                <Text>Thể loại</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{alignItems: 'center', marginLeft: 16}}
+                onPress={() => navigation.navigate('AuthorsScreen')}>
+                <Image
+                  source={Images.iconAuthor}
+                  style={{width: 72, height: 72}}
+                />
+                <Text>Tác giả</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+
           <View
             style={{
               marginHorizontal: 16,
@@ -205,11 +276,11 @@ class Home extends PureComponent {
             <TouchableOpacity
               style={{flexDirection: 'row', alignItems: 'center'}}
               onPress={() => navigation.navigate('LatestScreen')}>
-              <Text style={{color: '#F2994A'}}>Xem thêm</Text>
+              <Text style={{color: '#00c068'}}>Xem thêm</Text>
               <Icon
                 name="chevron-right"
                 type="MaterialCommunityIcons"
-                style={{color: '#F2994A', fontSize: 16}}
+                style={{color: '#00c068', fontSize: 16}}
               />
             </TouchableOpacity>
           </View>
@@ -229,11 +300,11 @@ class Home extends PureComponent {
             <TouchableOpacity
               style={{flexDirection: 'row', alignItems: 'center'}}
               onPress={() => navigation.navigate('FeaturedScreen')}>
-              <Text style={{color: '#F2994A'}}>Xem thêm</Text>
+              <Text style={{color: '#00c068'}}>Xem thêm</Text>
               <Icon
                 name="chevron-right"
                 type="MaterialCommunityIcons"
-                style={{color: '#F2994A', fontSize: 16}}
+                style={{color: '#00c068', fontSize: 16}}
               />
             </TouchableOpacity>
           </View>
@@ -252,11 +323,11 @@ class Home extends PureComponent {
             <TouchableOpacity
               style={{flexDirection: 'row', alignItems: 'center'}}
               onPress={() => navigation.navigate('PopularScreen')}>
-              <Text style={{color: '#F2994A'}}>Xem thêm</Text>
+              <Text style={{color: '#00c068'}}>Xem thêm</Text>
               <Icon
                 name="chevron-right"
                 type="MaterialCommunityIcons"
-                style={{color: '#F2994A', fontSize: 16}}
+                style={{color: '#00c068', fontSize: 16}}
               />
             </TouchableOpacity>
           </View>
@@ -274,11 +345,11 @@ class Home extends PureComponent {
             <TouchableOpacity
               style={{flexDirection: 'row', alignItems: 'center'}}
               onPress={() => navigation.navigate('CategoryScreen')}>
-              <Text style={{color: '#F2994A'}}>Xem thêm</Text>
+              <Text style={{color: '#00c068'}}>Xem thêm</Text>
               <Icon
                 name="chevron-right"
                 type="MaterialCommunityIcons"
-                style={{color: '#F2994A', fontSize: 16}}
+                style={{color: '#00c068', fontSize: 16}}
               />
             </TouchableOpacity>
           </View>
@@ -294,11 +365,11 @@ class Home extends PureComponent {
             <TouchableOpacity
               style={{flexDirection: 'row', alignItems: 'center'}}
               onPress={() => navigation.navigate('AuthorsScreen')}>
-              <Text style={{color: '#F2994A'}}>Xem thêm</Text>
+              <Text style={{color: '#00c068'}}>Xem thêm</Text>
               <Icon
                 name="chevron-right"
                 type="MaterialCommunityIcons"
-                style={{color: '#F2994A', fontSize: 16}}
+                style={{color: '#00c068', fontSize: 16}}
               />
             </TouchableOpacity>
           </View>

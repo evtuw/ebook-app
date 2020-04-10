@@ -59,6 +59,7 @@ class ListBookSearch extends PureComponent {
           ref={ref => {
             this.headerSearch = ref;
           }}
+          autoFocus
           onPress={this.goBack}
           text={keySearch}
           onSearch={this.doSearch}

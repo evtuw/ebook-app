@@ -1,6 +1,6 @@
 import React from 'react';
 import {Platform, View, StatusBar} from 'react-native';
-import {Root, StyleProvider} from 'native-base';
+import {Root, StyleProvider, Text} from 'native-base';
 import {Provider} from 'react-redux';
 import getTheme from '../core/theme/components';
 import commonColor from '../core/theme/variables/commonColor';

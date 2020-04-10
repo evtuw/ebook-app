@@ -7,8 +7,10 @@ import {
   Text,
   View,
   TouchableOpacity,
+  PermissionsAndroid,
 } from 'react-native';
 import {camelCase, nth} from 'lodash';
+import {Icon} from 'native-base';
 import ImageTile from './ImageTile';
 import CameraRoll from '@react-native-community/cameraroll';
 const {width} = Dimensions.get('window');
@@ -24,8 +26,35 @@ class ImageBrowser extends React.PureComponent {
     };
   }
 
-  componentDidMount() {
-    this.getPhotos();
+  async componentDidMount() {
+    const granted = await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+    );
+
+    if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      this.getPhotos();
+    } else {
+      this.requestCameraPermission();
+    }
+  }
+
+  async requestCameraPermission() {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        {
+          title: 'Ebook app',
+          message: 'Cấp quyền truy cập thư viện ảnh của bạn?',
+        },
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        this.getPhotos();
+      } else {
+        console.warn('Library permission denied');
+      }
+    } catch (err) {
+      console.warn(err);
+    }
   }
 
   selectImage = index => {
@@ -130,15 +159,16 @@ class ImageBrowser extends React.PureComponent {
           onPress={() => this.props.hideSelect()}
           style={{
             height: 32,
-            width: 84,
             borderRadius: 6,
-            borderColor: '#ff2e54',
             alignItems: 'center',
             justifyContent: 'center',
             padding: 6,
-            borderWidth: 1,
           }}>
-          <Text style={{color: '#ff2e54'}}>Đóng</Text>
+          <Icon
+            name={'md-close'}
+            type={'Ionicons'}
+            style={{color: '#ff2e54'}}
+          />
         </TouchableOpacity>
 
         {Object.keys(this.state.selected).length > 0 ? (
@@ -150,14 +180,16 @@ class ImageBrowser extends React.PureComponent {
             onPress={this.prepareCallback}
             style={{
               height: 32,
-              width: 84,
               borderRadius: 6,
-              backgroundColor: '#ff2e54',
               alignItems: 'center',
               justifyContent: 'center',
               padding: 6,
             }}>
-            <Text style={{color: '#FFF'}}>Xong</Text>
+            <Icon
+              name={'md-checkmark'}
+              type={'Ionicons'}
+              style={{color: '#00c068'}}
+            />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -186,6 +218,7 @@ class ImageBrowser extends React.PureComponent {
         onEndReached={() => {
           this.getPhotos();
         }}
+        scrollEnabled={this.props.visible}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={<Text>Đang tải ảnh</Text>}
         initialNumToRender={24}

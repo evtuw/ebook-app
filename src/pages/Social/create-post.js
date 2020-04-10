@@ -16,10 +16,10 @@ import {Icon, Toast} from 'native-base';
 import HeaderComponent from '../../components/headerComponents';
 import {API, getApiUrl, HOST_IMAGE_UPLOAD} from '../../config/server';
 import {Images} from '../../assets/image';
-import {postToServer} from '../../config';
+import {getFromServer, postToServer} from '../../config';
 import {postToServerWithAccount} from '../../../components/fetch';
 import ImageBrowser from '../../../components/multi-select-image/ImageBrowser';
-import ImageManipulator from '@pontusab/react-native-image-manipulator';
+import ImageManipulator from '../../lib/react-native-image-manipulator';
 import ProgressDialog from '../../../components/ProgressDialog';
 import {setWidth} from '../../cores/baseFuntion';
 
@@ -34,14 +34,32 @@ class CreatePost extends PureComponent {
       imageUpload: [],
       loading: false,
       uploadImage: false,
+      categories: [],
     };
   }
 
-  componentDidMount = () => {};
+  componentDidMount = () => {
+    this.getCategory();
+  };
 
   goBack = () => {
     const {navigation} = this.props;
     navigation.goBack();
+  };
+
+  getCategory = async () => {
+    const {accountInfo} = this.props;
+
+    try {
+      const response = await getFromServer(getApiUrl(API.CATEGORY), {
+        token: accountInfo.access_token.token,
+        page: 1,
+        page_size: 50,
+      });
+      this.setState({categories: response.data});
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   launchImageLibrary = () => {
@@ -89,7 +107,7 @@ class CreatePost extends PureComponent {
       const data = {
         content,
         category_id,
-        image: imageUpload,
+        image: imageUpload.length > 0 ? imageUpload : null,
         token: accountInfo.access_token.token,
         user_id: accountInfo.id,
       };
@@ -146,6 +164,38 @@ class CreatePost extends PureComponent {
     );
   };
 
+  selectCate = item => {
+    const {category_id} = this.state;
+    if (category_id === item.cid) {
+      this.setState({category_id: null});
+      return;
+    }
+    this.setState({category_id: item.cid});
+  };
+
+  renderCate = ({item}) => {
+    const {category_id} = this.state;
+    if (item.category_name)
+      return (
+        <TouchableOpacity
+          style={{
+            backgroundColor:
+              category_id === item.cid ? '#00c068' : 'rgba(0,192,104,0.13)',
+            padding: 4,
+            borderRadius: 4,
+            margin: 6,
+          }}
+          onPress={() => this.selectCate(item)}>
+          <Text
+            style={{color: category_id === item.cid ? '#FFF' : '#00c068'}}
+            numberOfLines={1}>
+            {item.category_name.substring(0, 20)}
+          </Text>
+        </TouchableOpacity>
+      );
+    return null;
+  };
+
   getFileFromUri = async image => {
     const type = image.type.split('/')[1];
 
@@ -175,7 +225,14 @@ class CreatePost extends PureComponent {
 
   render() {
     const {navigation, accountInfo} = this.props;
-    const {dataImage, content, visible, loading, uploadImage} = this.state;
+    const {
+      dataImage,
+      content,
+      visible,
+      loading,
+      uploadImage,
+      categories,
+    } = this.state;
     return (
       <View style={{flex: 1, backgroundColor: '#FFF'}}>
         <HeaderComponent
@@ -192,12 +249,12 @@ class CreatePost extends PureComponent {
           visible={uploadImage}
           message="Vui lòng chờ giây lát..."
         />
-        <ScrollView>
+        <ScrollView scrollEnabled>
           <View style={{margin: 16, flexDirection: 'row'}}>
             <Image
               source={
                 accountInfo.avatar
-                  ? {uri: HOST_IMAGE_UPLOAD + accountInfo.avatar}
+                  ? {uri: HOST_IMAGE_UPLOAD + JSON.parse(accountInfo.avatar)[0]}
                   : Images.avatarDefault
               }
               style={{width: 40, height: 40, borderRadius: 20}}
@@ -206,6 +263,14 @@ class CreatePost extends PureComponent {
               {accountInfo.name}
             </Text>
           </View>
+          <FlatList
+            data={categories}
+            horizontal
+            style={{marginHorizontal: 8}}
+            contentContainerStyle={{flex: 1, flexWrap: 'wrap'}}
+            keyExtractor={() => String(Math.random())}
+            renderItem={this.renderCate}
+          />
           <View
             style={{
               marginHorizontal: 8,
@@ -231,18 +296,20 @@ class CreatePost extends PureComponent {
               />
             </View>
           </View>
-          <View style={{padding: 16}}>
-            <TouchableOpacity
-              style={{flexDirection: 'row', alignItems: 'center', height: 32}}
-              onPress={this.launchImageLibrary}>
-              <Icon
-                name="file-photo-o"
-                type="FontAwesome"
-                style={{fontSize: 22}}
-              />
-              <Text style={{marginLeft: 16, fontSize: 18}}>Thư viện ảnh</Text>
-            </TouchableOpacity>
-          </View>
+          {!visible && (
+            <View style={{padding: 16}}>
+              <TouchableOpacity
+                style={{flexDirection: 'row', alignItems: 'center', height: 32}}
+                onPress={this.launchImageLibrary}>
+                <Icon
+                  name="file-photo-o"
+                  type="FontAwesome"
+                  style={{fontSize: 22}}
+                />
+                <Text style={{marginLeft: 16, fontSize: 18}}>Thư viện ảnh</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {visible ? (
             <ImageBrowser
               max={10}

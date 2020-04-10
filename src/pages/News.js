@@ -9,6 +9,7 @@ import {
   VirtualizedList,
   TouchableWithoutFeedback,
   DeviceEventEmitter,
+  ScrollView,
 } from 'react-native';
 import {Button, Container, Text, Content, Icon} from 'native-base';
 import {connect} from 'react-redux';
@@ -36,11 +37,13 @@ class News extends PureComponent {
       lazy: true,
       category_id: 0,
       page: 1,
+      categories: [],
     };
   }
 
-  componentDidMount() {
-    this.getData();
+  async componentDidMount() {
+    await this.getData();
+    this.getCategory();
     const date = new Date();
     if (date.getHours() < 12 && date.getHours() >= 6) {
       this.setState({textHello: 'Chào buổi sáng!'});
@@ -62,6 +65,20 @@ class News extends PureComponent {
   componentWillUnmount(): void {
     this.listener.remove();
   }
+
+  getCategory = async () => {
+    const {accountInfo} = this.props;
+    try {
+      const response = await getFromServer(getApiUrl(API.CATEGORY), {
+        token: accountInfo.access_token.token,
+        page: 1,
+        page_size: 50,
+      });
+      this.setState({categories: response.data});
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   getData = async () => {
     const {accountInfo} = this.props;
@@ -85,8 +102,9 @@ class News extends PureComponent {
   };
 
   onRefresh = async () => {
-    await this.setState({refreshing: true, page: 1, lazy: true});
+    await this.setState({refreshing: true, page: 1, lazy: true, data: []});
     this.getData();
+    this.getCategory();
   };
 
   refreshControl() {
@@ -96,9 +114,59 @@ class News extends PureComponent {
     );
   }
 
+  selectCate = item => {
+    const {category_id} = this.state;
+    if (category_id === item.cid) {
+      this.setState({category_id: null}, () => this.onRefresh());
+      return;
+    }
+    this.setState({category_id: item.cid}, () => this.onRefresh());
+  };
+
+  renderCate = ({item}) => {
+    const {category_id} = this.state;
+    if (item.category_name)
+      return (
+        <TouchableOpacity
+          style={{
+            backgroundColor:
+              category_id === item.cid ? '#00c068' : 'rgba(0,192,104,0.13)',
+            padding: 4,
+            borderRadius: 4,
+            margin: 6,
+          }}
+          onPress={() => this.selectCate(item)}>
+          <Text
+            style={{color: category_id === item.cid ? '#FFF' : '#00c068'}}
+            numberOfLines={1}>
+            {item.category_name.substring(0, 20)}
+          </Text>
+        </TouchableOpacity>
+      );
+    return null;
+  };
+
   navigateDetail = item => {
     const {navigation} = this.props;
     navigation.navigate('NewsDetailScreen', {data: item, visible: true});
+  };
+
+  regexStringToTag = str => {
+    let r = str;
+    r = r.replace(new RegExp(/\s/g), '');
+    r = r.replace(new RegExp(/[àáâãäå]/g), 'a');
+    r = r.replace(new RegExp(/æ/g), 'ae');
+    r = r.replace(new RegExp(/ç/g), 'c');
+    r = r.replace(new RegExp(/đ/g), 'd');
+    r = r.replace(new RegExp(/[èéêë]/g), 'e');
+    r = r.replace(new RegExp(/[ìíîï]/g), 'i');
+    r = r.replace(new RegExp(/ñ/g), 'n');
+    r = r.replace(new RegExp(/[òóôõöơớố]/g), 'o');
+    r = r.replace(new RegExp(/œ/g), 'oe');
+    r = r.replace(new RegExp(/[ùúûüư]/g), 'u');
+    r = r.replace(new RegExp(/[ýÿ]/g), 'y');
+    r = r.replace(new RegExp(/\W/g), '');
+    return r;
   };
 
   renderItem = ({item}) => {
@@ -152,20 +220,18 @@ class News extends PureComponent {
           <View style={{flexDirection: 'row'}}>
             <Image
               source={
-                item.author_avatar
-                  ? {uri: HOST_IMAGE_UPLOAD + item.author_avatar}
+                item.avatar_author
+                  ? {uri: HOST_IMAGE_UPLOAD + JSON.parse(item.avatar_author)[0]}
                   : Images.avatarDefault
               }
               style={{
                 width: 40,
                 height: 40,
                 borderRadius: 20,
-                borderWidth: 1,
-                borderColor: '#ff2e54',
               }}
               resizeMode="cover"
             />
-            <View style={{marginLeft: 16}}>
+            <View style={{marginLeft: 16, flex: 1}}>
               <Text
                 style={{
                   fontWeight: 'bold',
@@ -177,6 +243,18 @@ class News extends PureComponent {
               </Text>
               <Text note>{formatDateNow(item.created_at)}</Text>
             </View>
+            {item.cat_name && (
+              <View
+                style={{
+                  paddingHorizontal: 8,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Text style={{color: '#ff2e54'}} numberOfLines={1}>
+                  #{this.regexStringToTag(item.cat_name)}
+                </Text>
+              </View>
+            )}
           </View>
           <View style={{marginVertical: 8}}>
             <Text numberOfLines={4}>{item.content}</Text>
@@ -192,7 +270,14 @@ class News extends PureComponent {
               dataImage.map((v, index) => {
                 if (index === 0) {
                   return (
-                    <TouchableOpacity disabled={item.is_active === 0}>
+                    <TouchableOpacity
+                      disabled={item.is_active === 0}
+                      onPress={() =>
+                        navigation.navigate('NewsDetailScreen', {
+                          data: item,
+                          visible: false,
+                        })
+                      }>
                       <FastImage
                         source={{
                           uri: HOST_IMAGE_UPLOAD + v,
@@ -216,7 +301,13 @@ class News extends PureComponent {
                     <TouchableOpacity
                       style={{
                         marginVertical: 8,
-                      }}>
+                      }}
+                      onPress={() =>
+                        navigation.navigate('NewsDetailScreen', {
+                          data: item,
+                          visible: false,
+                        })
+                      }>
                       <FastImage
                         source={{uri: HOST_IMAGE_UPLOAD + v}}
                         style={{
@@ -252,7 +343,9 @@ class News extends PureComponent {
                   color: '#AAA',
                 }}
               />
-              <Text style={{marginLeft: 8, color: '#AAA'}}>Bình luận </Text>
+              <Text style={{marginLeft: 8, color: '#AAA'}}>
+                Bình luận ({item.user_comments || 0}){' '}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -266,22 +359,19 @@ class News extends PureComponent {
 
   render() {
     const {navigation, accountInfo} = this.props;
-    const {textHello, refreshing, isRules, modalRule, data, lazy} = this.state;
-    const {navigate} = navigation;
-    const data1 = [
-      'Chiến thuật',
-      'Hành động',
-      'Hài hước',
-      'Xã hội',
-      'Ý tưởng lớn :D',
-      'Trò chơi giải trí',
-      'Tâm lý tình cảm',
-    ];
+    const {
+      textHello,
+      refreshing,
+      isRules,
+      modalRule,
+      data,
+      lazy,
+      categories,
+    } = this.state;
     const rules = [
       'Tất cả bài đăng phải chờ phê duyệt từ admin.',
-      'Không đăng bài có nội dung nhạy cảm, nội dung xấu.',
+      'Không đăng bài có nội dung xấu, nhạy cảm,...',
       'Có thể đăng các bài viết về mua bán, trao đổi sách.',
-      'Các bài đăng chỉ được phép đăng tối đa 3 ảnh.',
       'Có thể đăng bài giới thiệu sách và buộc phải có thể loại kèm theo.',
     ];
     return (
@@ -301,7 +391,10 @@ class News extends PureComponent {
               <Image
                 source={
                   accountInfo.avatar
-                    ? {uri: HOST_IMAGE_UPLOAD + accountInfo.avatar}
+                    ? {
+                        uri:
+                          HOST_IMAGE_UPLOAD + JSON.parse(accountInfo.avatar)[0],
+                      }
                     : Images.avatarDefault
                 }
                 style={{width: 60, height: 60, borderRadius: 30}}
@@ -329,7 +422,6 @@ class News extends PureComponent {
                   shadowOpacity: 0.1,
                   shadowRadius: 4,
                   elevation: 3,
-                  height: 110,
                   marginHorizontal: 16,
                   marginBottom: 8,
                   padding: 16,
@@ -351,7 +443,7 @@ class News extends PureComponent {
                     style={{
                       width: setWidth('20%'),
                       height: 32,
-                      backgroundColor: '#ff2e54',
+                      backgroundColor: '#00c068',
                       borderRadius: 4,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -367,7 +459,7 @@ class News extends PureComponent {
                       height: 32,
                       backgroundColor: '#FFF',
                       borderRadius: 4,
-                      borderColor: '#ff2e54',
+                      borderColor: '#00c068',
                       borderWidth: 1,
                       marginLeft: 16,
                       alignItems: 'center',
@@ -375,7 +467,7 @@ class News extends PureComponent {
                     }}
                     onPress={() => this.setState({isRules: false})}>
                     <Text
-                      style={{color: '#ff2e54', textTransform: 'uppercase'}}>
+                      style={{color: '#00c068', textTransform: 'uppercase'}}>
                       Bỏ qua
                     </Text>
                   </TouchableOpacity>
@@ -387,7 +479,10 @@ class News extends PureComponent {
               <Image
                 source={
                   accountInfo.avatar
-                    ? {uri: HOST_IMAGE_UPLOAD + accountInfo.avatar}
+                    ? {
+                        uri:
+                          HOST_IMAGE_UPLOAD + JSON.parse(accountInfo.avatar)[0],
+                      }
                     : Images.avatarDefault
                 }
                 style={{width: 40, height: 40, borderRadius: 20}}
@@ -418,7 +513,7 @@ class News extends PureComponent {
             <View style={{margin: 16}}>
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
                 <View
-                  style={{width: 4, height: 24, backgroundColor: '#ff2e54'}}
+                  style={{width: 4, height: 24, backgroundColor: '#00c068'}}
                 />
                 <Text style={{marginLeft: 5, fontSize: 18}}>Chủ đề HOT</Text>
               </View>
@@ -429,32 +524,26 @@ class News extends PureComponent {
                   marginVertical: 8,
                   flexDirection: 'row',
                 }}>
-                {data1.map(item => (
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: 'rgba(255, 46, 84, 0.1)',
-                      borderRadius: 4,
-                      padding: 6,
-                      margin: 4,
-                    }}>
-                    <Text style={{color: '#ff2e54'}} note>
-                      {item}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                <FlatList
+                  data={categories}
+                  horizontal
+                  contentContainerStyle={{flex: 1, flexWrap: 'wrap'}}
+                  keyExtractor={() => String(Math.random())}
+                  renderItem={this.renderCate}
+                />
               </View>
             </View>
             <View style={{margin: 16}}>
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
                 <View
-                  style={{width: 4, height: 24, backgroundColor: '#ff2e54'}}
+                  style={{width: 4, height: 24, backgroundColor: '#00c068'}}
                 />
                 <Text style={{marginLeft: 5, fontSize: 18}}>Bài viết</Text>
               </View>
               <LazyLoadingProject length={1} visible={lazy} />
               <VirtualizedList
                 getItem={(d, index) => d[index]}
-                getItemCount={d => d.length}
+                getItemCount={d => d?.length}
                 data={data}
                 style={{marginTop: 16}}
                 contentContainerStyle={{marginVertical: 16}}
@@ -510,7 +599,7 @@ class News extends PureComponent {
                   <Icon
                     name="dot-single"
                     type="Entypo"
-                    style={{color: '#ff2e54'}}
+                    style={{color: '#00c068'}}
                   />
                   <Text style={{fontSize: 16}}>{item}</Text>
                 </View>

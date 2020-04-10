@@ -43,12 +43,16 @@ export default class HeaderSearch extends PureComponent {
 
   render() {
     const {keyword} = this.state;
-    const {onPress, disable, text} = this.props;
+    const {onPress, disable, text, autoFocus, placeholder} = this.props;
     return (
       <View style={styles.container}>
         <View style={styles.inputWrapper}>
           <TouchableOpacity onPress={onPress} style={{marginLeft: 6}}>
-            <Icon name="ios-arrow-round-back" type="Ionicons" />
+            <Icon
+              name="ios-arrow-round-back"
+              type="Ionicons"
+              style={{color: '#00c068'}}
+            />
           </TouchableOpacity>
           {disable ? (
             <TouchableOpacity onPress={this.openAdvancedSearch}>
@@ -58,12 +62,12 @@ export default class HeaderSearch extends PureComponent {
             <TextInput
               style={styles.entry}
               value={text || keyword}
-              autoFocus
+              autoFocus={autoFocus}
               ref={input => {
                 this.inputSearch = input;
               }}
               placeholderTextColor="#D0C9D6"
-              placeholder="Tìm theo tiêu đề, nội dung sách..."
+              placeholder={placeholder || 'Tìm theo tiêu đề, nội dung sách...'}
               onChangeText={this.onChangeText}
               returnKeyType="search"
               onSubmitEditing={this.onSubmitEditing}

@@ -37,11 +37,11 @@ export default class AuthorHome extends PureComponent {
             borderBottomLeftRadius: 6,
           }}
         />
-        <View>
+        <View style={{flex: 1}}>
           <Text
             style={{
               marginLeft: 8,
-              fontsize: 13,
+              fontSize: 13,
               color: '#2D9CDB',
               marginTop: 4,
             }}>
@@ -50,7 +50,11 @@ export default class AuthorHome extends PureComponent {
           <Text style={{color: '#000', fontSize: 18, marginLeft: 8}}>
             {item.name}
           </Text>
-          <Text>{item.description}</Text>
+          <Text
+            numberOfLines={2}
+            style={{flex: 1, marginHorizontal: 8, color: '#AAA'}}>
+            {item.description}
+          </Text>
         </View>
       </TouchableOpacity>
     );

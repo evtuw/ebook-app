@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  DeviceEventEmitter,
 } from 'react-native';
 import HeaderComponent from '../../components/headerComponents';
 import {connect} from 'react-redux';
@@ -71,7 +72,11 @@ class ListComment extends PureComponent {
         content: comment,
         token: accountInfo.access_token.token,
       });
-      if (response.status === 1) this.onRefresh();
+      if (response.status === 1) {
+        this.onRefresh();
+        this.setState({comment: ''});
+        DeviceEventEmitter.emit('LoadData');
+      }
     } catch (e) {
       console.log(e);
     } finally {
@@ -144,7 +149,7 @@ class ListComment extends PureComponent {
               <Image
                 source={
                   item.avatar
-                    ? {uri: HOST_IMAGE_UPLOAD + item.avatar}
+                    ? {uri: HOST_IMAGE_UPLOAD + JSON.parse(item.avatar)[0]}
                     : Images.avatarDefault
                 }
                 style={{
