@@ -12,6 +12,7 @@ import {
 import {Icon} from 'native-base';
 import FastImage from 'react-native-fast-image';
 import {setWidth} from '../cores/baseFuntion';
+import color from '../assets/static-data/color';
 
 export default class HeaderComponent extends Component {
   constructor(props) {
@@ -58,7 +59,7 @@ export default class HeaderComponent extends Component {
           style={{
             textAlign: 'center',
             fontSize: 20,
-            color: '#00c068',
+            color: color.primaryColor,
             flex: 1,
           }}>
           {title}
@@ -70,7 +71,7 @@ export default class HeaderComponent extends Component {
             <Icon
               name={iconRight}
               type={iconRightType}
-              style={{fontSize: 24}}
+              style={{fontSize: 24, color: color.primaryColor}}
             />
           </TouchableOpacity>
         ) : (

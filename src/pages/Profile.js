@@ -20,8 +20,9 @@ import Modal from 'react-native-modal';
 import AsyncStorage from 'react-native/Libraries/Storage/AsyncStorage';
 import {formatNumber} from '../../components/until';
 import {setWidth} from '../cores/baseFuntion';
-
+import color from '../assets/static-data/color';
 import appJson from '../../app.json';
+import ProgressDialog from '../../components/ProgressDialog';
 
 class Profile extends Component {
   constructor(props) {
@@ -29,6 +30,7 @@ class Profile extends Component {
     this.state = {
       data: {},
       visible: false,
+      visibleDialog: false,
     };
   }
 
@@ -50,6 +52,7 @@ class Profile extends Component {
 
   logout = async () => {
     const {navigation, accountInfo} = this.props;
+    this.setState({visibleDialog: true});
     try {
       await postToServer(getApiUrl(API.LOGOUT), {
         token: accountInfo.access_token.token,
@@ -58,6 +61,8 @@ class Profile extends Component {
       navigation.navigate('LoginStack');
     } catch (e) {
       console.log(e);
+    } finally {
+      this.setState({visibleDialog: false});
     }
   };
 
@@ -67,23 +72,46 @@ class Profile extends Component {
 
   render() {
     const {navigation, accountInfo} = this.props;
-    const {data, visible} = this.state;
+    const {data, visible, visibleDialog} = this.state;
     return (
       <View style={styles.saf}>
-        <HeaderComponent
-          navigation={navigation}
-          iconLeft="ios-arrow-back"
-          iconLeftType="Ionicons"
-          title="Cá nhân"
-          onPressLeft={this.goBack}
-        />
+        <ProgressDialog visible={visibleDialog} message="Vui lòng chờ..." />
+        <View
+          style={{
+            flexDirection: 'row',
+            marginTop: 24,
+            marginLeft: 24,
+            marginBottom: 16,
+            marginRight: 16,
+            alignItems: 'center',
+          }}>
+          <Image source={Images.iconLogin2} style={{width: 26, height: 26}} />
+          <Text
+            style={{
+              fontSize: 26,
+              color: color.primaryColor,
+              fontWeight: 'bold',
+              marginLeft: 8,
+              fontStyle: 'italic',
+              flex: 1,
+            }}>
+            Tài khoản
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Notification')}>
+            <Icon
+              name={'ios-notifications-outline'}
+              type={'Ionicons'}
+              style={{fontSize: 24, color: color.primaryColor}}
+            />
+          </TouchableOpacity>
+        </View>
         <ScrollView>
           <View style={styles.viewInfo}>
             <TouchableOpacity
               onPress={() => navigation.navigate('EditProfileScreen')}>
               <Image
                 source={
-                  accountInfo.avatar
+                  accountInfo?.avatar
                     ? {
                         uri:
                           HOST_IMAGE_UPLOAD + JSON.parse(accountInfo.avatar)[0],
@@ -113,20 +141,37 @@ class Profile extends Component {
             </TouchableOpacity>
             <View style={{marginLeft: 16}}>
               <Text style={{color: '#3F3356', fontSize: 22}} numberOfLines={1}>
-                {accountInfo.name}
+                {accountInfo?.name}
               </Text>
               <Text style={{color: '#3F3356', fontSize: 16}}>
-                Điểm: {formatNumber(accountInfo.coin)}
+                Điểm: {formatNumber(accountInfo?.coin)}
               </Text>
             </View>
           </View>
           <TouchableOpacity
             style={styles.viewMenu}
+            onPress={() => navigation.navigate('MyProfileScreen')}>
+            <Icon
+              name="user"
+              type="EvilIcons"
+              style={{marginLeft: 16, color: '#00c068', fontSize: 20}}
+            />
+            <View style={{padding: 16, flex: 1}}>
+              <Text>Trang cá nhân</Text>
+            </View>
+            <Icon
+              name="chevron-right"
+              type="MaterialCommunityIcons"
+              style={{marginRight: 16, fontWeight: 'normal', fontSize: 18}}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.viewMenu}
             onPress={() => navigation.navigate('ListCardScreen')}>
             <Icon
-              name="cash-usd"
-              type="MaterialCommunityIcons"
-              style={{marginLeft: 16, color: '#00c068', fontSize: 20}}
+              name="attach-money"
+              type="MaterialIcons"
+              style={{marginLeft: 16, color: '#c02064', fontSize: 18}}
             />
             <View style={{padding: 16, flex: 1}}>
               <Text>Đổi thẻ cào</Text>
@@ -137,7 +182,7 @@ class Profile extends Component {
               style={{marginRight: 16, fontWeight: 'normal', fontSize: 18}}
             />
           </TouchableOpacity>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.viewMenu}
             onPress={() => navigation.navigate('TutorialCardScreen')}>
             <Icon
@@ -153,14 +198,14 @@ class Profile extends Component {
               type="MaterialCommunityIcons"
               style={{marginRight: 16, fontWeight: 'normal', fontSize: 18}}
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity
             style={styles.viewMenu}
             onPress={() => navigation.navigate('ListStoreScreen')}>
             <Icon
               name="book"
               type="AntDesign"
-              style={{marginLeft: 16, color: '#00c068', fontSize: 16}}
+              style={{marginLeft: 16, color: '#c09139', fontSize: 16}}
             />
             <View style={{padding: 16, flex: 1}}>
               <Text>Cửa hàng sách</Text>
@@ -179,10 +224,27 @@ class Profile extends Component {
             <Icon
               name="ios-information-circle-outline"
               type="Ionicons"
-              style={{marginLeft: 16, color: '#00c068', fontSize: 20}}
+              style={{marginLeft: 16, color: '#1462c0', fontSize: 20}}
             />
             <View style={{padding: 16, flex: 1}}>
               <Text>Thông tin ứng dụng</Text>
+            </View>
+            <Icon
+              name="chevron-right"
+              type="MaterialCommunityIcons"
+              style={{marginRight: 16, fontWeight: 'normal', fontSize: 18}}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.viewMenu, {marginBottom: 8}]}
+            onPress={() => navigation.navigate('ChangePasswordScreen')}>
+            <Icon
+              name="textbox-password"
+              type="MaterialCommunityIcons"
+              style={{marginLeft: 16, color: '#aac05c', fontSize: 18}}
+            />
+            <View style={{padding: 16, flex: 1}}>
+              <Text>Đổi mật khẩu</Text>
             </View>
             <Icon
               name="chevron-right"
@@ -196,7 +258,7 @@ class Profile extends Component {
             <Icon
               name="logout"
               type="AntDesign"
-              style={{marginLeft: 16, color: '#00c068', fontSize: 18}}
+              style={{marginLeft: 16, color: '#c00e40', fontSize: 16}}
             />
             <View style={{padding: 16, flex: 1}}>
               <Text>Đăng xuất</Text>

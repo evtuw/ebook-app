@@ -17,6 +17,7 @@ const iconCategory = require('./category_icon.png');
 const iconAuthor = require('./author_icon.png');
 const iconLogin = require('./icon_login.png');
 const iconLogin2 = require('./icon_login2.png');
+const iconAudio = require('./audio.png');
 
 const Images = {
   thumbdefault,
@@ -36,6 +37,7 @@ const Images = {
   banner,
   iconLogin,
   iconLogin2,
+  iconAudio,
 };
 
 export {Images};

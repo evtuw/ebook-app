@@ -27,6 +27,12 @@ import AddNewStore from '../pages/StoreBook/add-bookstores';
 import AddNewBook from '../pages/StoreBook/add-book';
 import MyBillBook from '../pages/StoreBook/my-bill-book';
 import DetailBook from '../pages/StoreBook/detail-book';
+import ChangePassword from '../pages/Auth/change-password';
+import ForgotPassword from '../pages/Auth/forgot-password';
+import MyProfile from '../pages/Social/my-profile';
+import ProfileSocial from '../pages/Social/profile-social';
+import AlbumAll from '../pages/Social/album-all';
+import Notification from '../pages/notification';
 
 const stackNavigator = {
   HomeScreen: {
@@ -98,6 +104,21 @@ const stackNavigator = {
   DetailBookScreen: {
     screen: DetailBook,
   },
+  ChangePasswordScreen: {
+    screen: ChangePassword,
+  },
+  MyProfileScreen: {
+    screen: MyProfile,
+  },
+  ProfileSocial: {
+    screen: ProfileSocial,
+  },
+  AlbumAll: {
+    screen: AlbumAll,
+  },
+  Notification: {
+    screen: Notification,
+  },
 };
 const stackScreens = createStackNavigator(stackNavigator, {
   navigationOptions: {headers: null},
@@ -111,6 +132,9 @@ const stackLogin = {
   },
   RegisterScreen: {
     screen: Register,
+  },
+  ForgotPassScreen: {
+    screen: ForgotPassword,
   },
 };
 

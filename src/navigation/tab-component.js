@@ -172,13 +172,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFF',
-    shadowColor: '#FF2D55',
+    shadowColor: '#000',
     shadowOffset: {
-      width: 0,
+      width: 1,
       height: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 2,
   },
 });

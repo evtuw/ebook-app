@@ -1,5 +1,5 @@
 import axios from 'axios';
-
+import AsyncStorage from '@react-native-community/async-storage';
 /**
  * response from api
  * @param {*} data
@@ -65,12 +65,17 @@ export const dispatchParams = (data, type) => dispatch => {
  * @param data
  * @returns {Promise<AxiosResponse<any> | {networkError: boolean}>}
  */
-export const postToServer = (apiURL, data) => {
+export const postToServer = async (apiURL, data) => {
   console.log(data, apiURL);
+  const player_id = await AsyncStorage.getItem('playerId');
+  const newData = {
+    ...data,
+    player_id: JSON.parse(player_id),
+  };
   return axios
-    .post(apiURL, data, {
+    .post(apiURL, newData, {
       headers: {
-        Authorization: 'Bearer ' + data.token,
+        Authorization: 'Bearer ' + newData.token,
         Accept: 'application/json',
       },
     })

@@ -1,4 +1,6 @@
 {
-  "name": "My_book",
-  "displayName": "My_book"
+  "name": "E-Book",
+  "displayName": "E-Book",
+  "version": "0.0.7",
+  "build": "10005"
 }

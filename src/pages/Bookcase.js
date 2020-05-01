@@ -18,6 +18,7 @@ import {getFromServer} from '../config';
 import {API, getApiUrl, HOST_IMAGE_UPLOAD} from '../config/server';
 import {formatDateNow} from '../../components/until';
 import {Images} from '../assets/image';
+import color from '../assets/static-data/color';
 
 class Bookcase extends Component {
   constructor(props) {
@@ -201,49 +202,75 @@ class Bookcase extends Component {
   render() {
     const {navigation} = this.props;
     const {favorites, recents, loading, refreshing} = this.state;
-    if (loading)
-      return (
-        <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
-          <ActivityIndicator color={'#FF2D55'} animating size="small" />
-        </View>
-      );
     return (
       <View style={styles.saf}>
-        <HeaderComponent
-          navigation={navigation}
-          iconLeft="ios-arrow-back"
-          iconLeftType="Ionicons"
-          title="Tủ sách"
-          onPressLeft={this.goBack}
-        />
-        <ScrollView
-          refreshControl={this.refreshControl()}
-          refreshing={refreshing}>
-          <View style={{margin: 16}}>
-            <Text style={{fontSize: 18}}>Sách đã đọc gần đây</Text>
-            <FlatList
-              data={recents}
-              maxToRenderPerBatch={6}
-              horizontal
-              removeClippedSubviews
-              style={{marginTop: 16}}
-              renderItem={this.renderRecent}
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={() => String(Math.random())}
+        <View
+          style={{
+            flexDirection: 'row',
+            marginTop: 24,
+            marginLeft: 24,
+            marginBottom: 16,
+            alignItems: 'center',
+            marginRight: 16,
+          }}>
+          <Image source={Images.iconLogin2} style={{width: 26, height: 26}} />
+          <Text
+            style={{
+              fontSize: 26,
+              color: color.primaryColor,
+              fontWeight: 'bold',
+              marginLeft: 8,
+              fontStyle: 'italic',
+              flex: 1,
+            }}>
+            Tủ sách
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Notification')}>
+            <Icon
+              name={'ios-notifications-outline'}
+              type={'Ionicons'}
+              style={{
+                fontSize: 24,
+                color: color.primaryColor,
+              }}
             />
+          </TouchableOpacity>
+        </View>
+        {loading ? (
+          <View
+            style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+            <ActivityIndicator color={'#FF2D55'} animating size="small" />
           </View>
-          <View style={{margin: 16}}>
-            <Text style={{fontSize: 18}}>Sách yêu thích</Text>
-            <FlatList
-              data={favorites}
-              horizontal
-              style={{marginTop: 16}}
-              showsHorizontalScrollIndicator={false}
-              renderItem={this.renderFavorite}
-              keyExtractor={() => String(Math.random())}
-            />
-          </View>
-        </ScrollView>
+        ) : (
+          <ScrollView
+            refreshControl={this.refreshControl()}
+            refreshing={refreshing}>
+            <View style={{margin: 16}}>
+              <Text style={{fontSize: 18}}>Sách đọc gần đây</Text>
+              <FlatList
+                data={recents}
+                maxToRenderPerBatch={6}
+                horizontal
+                removeClippedSubviews
+                style={{marginTop: 16}}
+                renderItem={this.renderRecent}
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={() => String(Math.random())}
+              />
+            </View>
+            <View style={{margin: 16}}>
+              <Text style={{fontSize: 18}}>Sách yêu thích</Text>
+              <FlatList
+                data={favorites}
+                horizontal
+                style={{marginTop: 16}}
+                showsHorizontalScrollIndicator={false}
+                renderItem={this.renderFavorite}
+                keyExtractor={() => String(Math.random())}
+              />
+            </View>
+          </ScrollView>
+        )}
       </View>
     );
   }

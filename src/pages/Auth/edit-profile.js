@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import HeaderComponent from '../../components/headerComponents';
 import {connect} from 'react-redux';
@@ -59,7 +60,7 @@ class EditProfile extends PureComponent {
 
   update = async () => {
     const {name, phone, imgUpload} = this.state;
-    const {accountInfo} = this.props;
+    const {accountInfo, navigation} = this.props;
     if (!name) return;
     this.setState({loading: true});
     try {
@@ -89,6 +90,9 @@ class EditProfile extends PureComponent {
           position: 'center',
           type: 'success',
         });
+        // if (navigation.state.params?.onRefresh)
+        //   navigation.state.params?.onRefresh();
+        this.goBack();
       }
     } catch (e) {
       console.log(e);
@@ -147,6 +151,8 @@ class EditProfile extends PureComponent {
       uploading,
       phone,
       name,
+      imgUpload,
+      loading,
     } = this.state;
     return (
       <View style={{flex: 1, backgroundColor: '#FFF'}}>
@@ -169,10 +175,10 @@ class EditProfile extends PureComponent {
             style={{padding: 16, alignItems: 'center'}}>
             <Image
               source={
-                accountInfo.avatar
+                imgUpload
+                  ? {uri: HOST_IMAGE_UPLOAD + JSON.parse(imgUpload)[0]}
+                  : accountInfo.avatar
                   ? {uri: HOST_IMAGE_UPLOAD + JSON.parse(accountInfo.avatar)[0]}
-                  : image
-                  ? {uri: image}
                   : Images.avatarDefault
               }
               style={{width: 100, height: 100, borderRadius: 50}}
@@ -221,6 +227,7 @@ class EditProfile extends PureComponent {
                 style={{
                   borderBottomWidth: 0.5,
                   borderBottomColor: '#CCC',
+                  marginBottom: 8,
                 }}>
                 <TextInput
                   value={phone}
@@ -261,7 +268,11 @@ class EditProfile extends PureComponent {
               justifyContent: 'center',
             }}
             onPress={this.update}>
-            <Text style={{color: '#FFF', fontSize: 18}}>Cập nhật</Text>
+            {loading ? (
+              <ActivityIndicator color={'#FFF'} />
+            ) : (
+              <Text style={{color: '#FFF', fontSize: 18}}>Cập nhật</Text>
+            )}
           </TouchableOpacity>
         ) : null}
       </View>

@@ -23,6 +23,7 @@ import ImageManipulator from '../../lib/react-native-image-manipulator';
 import ImageBrowser from '../../../components/multi-select-image/ImageBrowser';
 import {postToServerWithAccount} from '../../../components/fetch';
 import ProgressDialog from '../../../components/ProgressDialog';
+import FastImage from 'react-native-fast-image';
 
 class AddNewBook extends PureComponent {
   constructor(props) {
@@ -49,6 +50,29 @@ class AddNewBook extends PureComponent {
   }
 
   componentDidMount = () => {
+    const {navigation} = this.props;
+    if (navigation.state.params?.item) {
+      const {
+        title_book: name,
+        phone,
+        email,
+        address,
+        category_id,
+        description,
+        price,
+      } = navigation.state.params.item;
+      const {image} = navigation.state.params;
+      this.setState({
+        name,
+        phone,
+        email,
+        address,
+        category_id,
+        description,
+        price,
+        image,
+      });
+    }
     this.getCategory();
   };
 
@@ -81,6 +105,7 @@ class AddNewBook extends PureComponent {
         image: JSON.stringify(image),
         user_id: accountInfo.id,
         token: accountInfo.access_token.token,
+        id: navigation.state.params.item?.id,
       };
       const response = await postToServer(getApiUrl(API.ADD_STORE_BOOK), data);
       if (response.status === 1) {
@@ -197,7 +222,7 @@ class AddNewBook extends PureComponent {
 
   renderImage = ({item}) => (
     <View style={{marginHorizontal: 8, marginVertical: 16}}>
-      <Image
+      <FastImage
         source={{uri: HOST_IMAGE_UPLOAD + item}}
         style={{width: 80, height: 80, borderRadius: 6}}
       />
@@ -320,7 +345,7 @@ class AddNewBook extends PureComponent {
                   disabled>
                   <Text
                     style={{
-                      color: category_id ? '#0D0E10' : '#D0C9D6',
+                      color: '#D0C9D6',
                       flex: 1,
                     }}
                     numberOfLines={1}>

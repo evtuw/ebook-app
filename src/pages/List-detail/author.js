@@ -25,7 +25,7 @@ class Authors extends PureComponent {
       const response = await getFromServer(getApiUrl(API.AUTHOR), {
         token: accountInfo.access_token.token,
         page: 1,
-        page_size: 16,
+        page_size: 50,
       });
       this.setState({data: response.data, total: response.total});
     } catch (e) {

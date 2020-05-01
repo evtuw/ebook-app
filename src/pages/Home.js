@@ -148,7 +148,7 @@ class Home extends PureComponent {
             }}>
             <Image
               source={
-                accountInfo.avatar
+                accountInfo?.avatar
                   ? {uri: HOST_IMAGE_UPLOAD + JSON.parse(accountInfo.avatar)[0]}
                   : Images.avatarDefault
               }

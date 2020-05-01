@@ -1,13 +1,19 @@
+export const HOST = 'http://192.168.0.108:80/api/';
+export const HOST_IMAGE_UPLOAD = 'http://192.168.0.108:80/storage/';
 // export const HOST = 'http://192.168.1.246:80/api/';
-export const HOST = 'http://104.197.230.169:80/api/'; // public
 // export const HOST_IMAGE_UPLOAD = 'http://192.168.1.246:80/storage/';
-export const HOST_IMAGE_UPLOAD = 'http://104.197.230.169:80/storage/'; // public
+// export const HOST = 'http://104.197.230.169:80/api/'; // public
+// export const HOST_IMAGE_UPLOAD = 'http://104.197.230.169:80/storage/'; // public
 export const API = {
   LOGIN: 'login',
   LOGOUT: 'logout',
   INFO: 'details',
   INFO_USER: 'detail/user',
+  INFO_PROFILE: 'detail_user',
   UPDATE_PROFILE: 'user/update_profile',
+  UPDATE_PASSWORD: 'change_password',
+  FORGOT_PASSWORD: 'reset-password',
+  RESET_PASSWORD: 'reset-password',
   APP_DETAIL: 'app_details',
   REGISTER: 'register',
   HOME: 'home',

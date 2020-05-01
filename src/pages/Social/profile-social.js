@@ -1,89 +1,71 @@
 import React, {PureComponent} from 'react';
 import {
-  Image,
-  StyleSheet,
   View,
+  Text,
+  Image,
   TouchableOpacity,
-  FlatList,
-  RefreshControl,
-  VirtualizedList,
-  TouchableWithoutFeedback,
-  DeviceEventEmitter,
   ScrollView,
+  FlatList,
+  Dimensions,
+  RefreshControl,
+  TouchableWithoutFeedback,
+  StyleSheet,
+  VirtualizedList,
+  Alert,
 } from 'react-native';
-import {Button, Container, Text, Content, Icon} from 'native-base';
-import {connect} from 'react-redux';
-import {API, getApiUrl, HOST_IMAGE_UPLOAD} from '../config/server';
-import {Images} from '../assets/image';
-import {setWidth} from '../cores/baseFuntion';
+import {Icon} from 'native-base';
+import HeaderComponent from '../../components/headerComponents';
+import {Images} from '../../assets/image';
+import color from '../../assets/static-data/color';
 import FastImage from 'react-native-fast-image';
-import Modal from 'react-native-modal';
-import {getFromServer} from '../config';
-import {formatDateNow} from '../../components/until';
-import {
-  LazyLoadingListing,
-  LazyLoadingProject,
-} from '../../components/lazy-load';
-import color from '../assets/static-data/color';
+import {API, getApiUrl, HOST_IMAGE_UPLOAD} from '../../config/server';
+import {connect} from 'react-redux';
+import {getFromServer} from '../../config';
+import {setWidth} from '../../cores/baseFuntion';
+import {formatDateNow} from '../../../components/until';
 
-class News extends PureComponent {
+const {width: dvWidth} = Dimensions.get('window');
+
+class ProfileSocial extends PureComponent {
   constructor(props) {
     super(props);
     this.state = {
-      textHello: '',
-      refreshing: false,
       data: [],
-      isRules: true,
-      modalRule: false,
-      lazy: true,
-      category_id: 0,
       page: 1,
-      categories: [],
+      lazy: false,
+      refreshing: false,
+      info: null,
+      listImage: [],
     };
   }
 
   async componentDidMount() {
-    await this.getData();
-    this.getCategory();
-    const date = new Date();
-    if (date.getHours() < 12 && date.getHours() >= 6) {
-      this.setState({textHello: 'Chào buổi sáng!'});
-    }
-    if (date.getHours() >= 12 && date.getHours() < 18) {
-      this.setState({textHello: 'Chào buổi chiều!'});
-    }
-    if (
-      (date.getHours() >= 18 && date.getHours() < 24) ||
-      (date.getHours() >= 0 && date.getHours() < 6)
-    ) {
-      this.setState({textHello: 'Chào buổi tối!'});
-    }
-    this.listener = DeviceEventEmitter.addListener('LoadData', () =>
-      this.onRefresh(),
-    );
+    const {navigation} = this.props;
+    const {user_id} = navigation.state.params;
+    await this.getInfo(user_id);
+    this.getData();
   }
 
-  componentWillUnmount(): void {
-    this.listener.remove();
-  }
-
-  getCategory = async () => {
+  getInfo = async id => {
     const {accountInfo} = this.props;
     try {
-      const response = await getFromServer(getApiUrl(API.CATEGORY), {
+      const response = await getFromServer(getApiUrl(API.INFO_PROFILE), {
         token: accountInfo.access_token.token,
-        page: 1,
-        page_size: 50,
+        id,
       });
-      this.setState({categories: response.data?.slice(0, 10)});
+      if (response.status === 1) {
+        this.setState({info: response.data});
+      }
     } catch (e) {
       console.log(e);
+    } finally {
     }
   };
 
   getData = async () => {
-    const {accountInfo} = this.props;
+    const {accountInfo, navigation} = this.props;
     const {category_id, page, data} = this.state;
+    const {user_id} = navigation.state.params;
     try {
       const response = await getFromServer(getApiUrl(API.LIST_POST), {
         token: accountInfo.access_token.token,
@@ -91,9 +73,18 @@ class News extends PureComponent {
         page_size: 50,
         category_id,
       });
+      let listImage = [];
       console.log(response);
+      const newData = response.data.filter(t => t.user_id === user_id);
+      newData.forEach(item => {
+        const dataImage = JSON.parse(item.image);
+        if (item.image) {
+          listImage = [...listImage, ...dataImage];
+        }
+      });
       this.setState({
-        data: page === 1 ? response.data : [...data, ...response.data],
+        data: page === 1 ? newData : [...data, ...newData],
+        listImage,
       });
     } catch (e) {
       console.log(e);
@@ -105,7 +96,6 @@ class News extends PureComponent {
   onRefresh = async () => {
     await this.setState({refreshing: true, page: 1, lazy: true, data: []});
     this.getData();
-    this.getCategory();
   };
 
   refreshControl() {
@@ -115,59 +105,9 @@ class News extends PureComponent {
     );
   }
 
-  selectCate = item => {
-    const {category_id} = this.state;
-    if (category_id === item.cid) {
-      this.setState({category_id: null}, () => this.onRefresh());
-      return;
-    }
-    this.setState({category_id: item.cid}, () => this.onRefresh());
-  };
-
-  renderCate = ({item}) => {
-    const {category_id} = this.state;
-    if (item.category_name)
-      return (
-        <TouchableOpacity
-          style={{
-            backgroundColor:
-              category_id === item.cid ? '#00c068' : 'rgba(0,192,104,0.13)',
-            padding: 4,
-            borderRadius: 4,
-            margin: 6,
-          }}
-          onPress={() => this.selectCate(item)}>
-          <Text
-            style={{color: category_id === item.cid ? '#FFF' : '#00c068'}}
-            numberOfLines={1}>
-            {item.category_name.substring(0, 20)}
-          </Text>
-        </TouchableOpacity>
-      );
-    return null;
-  };
-
-  navigateDetail = item => {
+  goBack = () => {
     const {navigation} = this.props;
-    navigation.navigate('NewsDetailScreen', {data: item, visible: true});
-  };
-
-  regexStringToTag = str => {
-    let r = str;
-    r = r.replace(new RegExp(/\s/g), '');
-    r = r.replace(new RegExp(/[àáâãäå]/g), 'a');
-    r = r.replace(new RegExp(/æ/g), 'ae');
-    r = r.replace(new RegExp(/ç/g), 'c');
-    r = r.replace(new RegExp(/đ/g), 'd');
-    r = r.replace(new RegExp(/[èéêë]/g), 'e');
-    r = r.replace(new RegExp(/[ìíîï]/g), 'i');
-    r = r.replace(new RegExp(/ñ/g), 'n');
-    r = r.replace(new RegExp(/[òóôõöơớố]/g), 'o');
-    r = r.replace(new RegExp(/œ/g), 'oe');
-    r = r.replace(new RegExp(/[ùúûüư]/g), 'u');
-    r = r.replace(new RegExp(/[ýÿ]/g), 'y');
-    r = r.replace(new RegExp(/\W/g), '');
-    return r;
+    navigation.goBack();
   };
 
   renderItem = ({item}) => {
@@ -191,38 +131,13 @@ class News extends PureComponent {
             shadowRadius: 4,
             elevation: 2,
             marginBottom: 16,
-            marginLeft: 4,
             padding: 16,
-            width: setWidth('90%'),
+            width: dvWidth - 32,
             borderRadius: 4,
           }}>
-          {item.is_confirm === 0 ? (
-            <View
-              style={{
-                position: 'absolute',
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                width: setWidth('90%'),
-                height: 80,
-                zIndex: 22,
-                alignItems: 'center',
-                justifyContent: 'center',
-                top: '20%',
-              }}>
-              <Text
-                style={{
-                  color: '#FFF',
-                  fontSize: 18,
-                  fontFamily: 'SF Pro Text',
-                }}>
-                Bài viết đang chờ phê duyệt...
-              </Text>
-            </View>
-          ) : null}
           <View style={{flexDirection: 'row'}}>
             <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ProfileSocial', {user_id: item.user_id})
-              }
+              // onPress={() => navigation.navigate('MyProfileScreen')}
               style={{flexDirection: 'row', flex: 1}}>
               <Image
                 source={
@@ -387,85 +302,248 @@ class News extends PureComponent {
     );
   };
 
-  closePopup = () => {
-    this.setState({modalRule: false});
+  navigateDetail = item => {
+    const {navigation} = this.props;
+    navigation.navigate('NewsDetailScreen', {data: item, visible: true});
+  };
+
+  regexStringToTag = str => {
+    let r = str;
+    r = r.replace(new RegExp(/\s/g), '');
+    r = r.replace(new RegExp(/[àáâãäå]/g), 'a');
+    r = r.replace(new RegExp(/æ/g), 'ae');
+    r = r.replace(new RegExp(/ç/g), 'c');
+    r = r.replace(new RegExp(/đ/g), 'd');
+    r = r.replace(new RegExp(/[èéêë]/g), 'e');
+    r = r.replace(new RegExp(/[ìíîï]/g), 'i');
+    r = r.replace(new RegExp(/ñ/g), 'n');
+    r = r.replace(new RegExp(/[òóôõöơớố]/g), 'o');
+    r = r.replace(new RegExp(/œ/g), 'oe');
+    r = r.replace(new RegExp(/[ùúûüư]/g), 'u');
+    r = r.replace(new RegExp(/[ýÿ]/g), 'y');
+    r = r.replace(new RegExp(/\W/g), '');
+    return r;
+  };
+
+  renderImage = ({item, index}) => {
+    const {navigation} = this.props;
+    const {listImage} = this.state;
+    if (index <= 5) {
+      return (
+        <TouchableOpacity
+          style={{margin: 4, flex: 1}}
+          onPress={() =>
+            navigation.navigate('AlbumAll', {
+              data: listImage,
+            })
+          }>
+          <Image
+            style={{
+              width: '100%',
+              height: dvWidth * 0.3,
+              borderRadius: 6,
+              borderWidth: 0.3,
+              borderColor: color.primaryColor,
+            }}
+            source={{uri: HOST_IMAGE_UPLOAD + item}}
+          />
+        </TouchableOpacity>
+      );
+    }
+    return null;
+  };
+
+  formatData = (data, numColumns) => {
+    const numberOfFullRows = Math.floor(data.length / numColumns);
+
+    let numberOfElementsLastRow = data.length - numberOfFullRows * numColumns;
+    while (
+      numberOfElementsLastRow !== numColumns &&
+      numberOfElementsLastRow !== 0
+    ) {
+      data.push({key: `blank-${numberOfElementsLastRow}`, empty: true});
+      numberOfElementsLastRow++;
+    }
+
+    return data;
+  };
+
+  alert = () => {
+    Alert.alert(
+      'E Book App',
+      'Tính năng đang được phát triển, vui lòng thử lại sau. Xin cảm ơn!',
+    );
   };
 
   render() {
     const {navigation, accountInfo} = this.props;
-    const {
-      textHello,
-      refreshing,
-      isRules,
-      modalRule,
-      data,
-      lazy,
-      categories,
-    } = this.state;
-    const rules = [
-      'Tất cả bài đăng phải chờ phê duyệt từ admin.',
-      'Không đăng bài có nội dung xấu, nhạy cảm,...',
-      'Có thể đăng các bài viết về mua bán, trao đổi sách.',
-      'Có thể đăng bài giới thiệu sách và buộc phải có thể loại kèm theo.',
-    ];
+    const {data, info, listImage} = this.state;
     return (
-      <Container>
-        <View style={styles.container}>
-          <View
-            style={{
-              marginTop: 24,
-              marginBottom: 16,
-              flexDirection: 'row',
-              marginLeft: 24,
-              marginRight: 16,
-              alignItems: 'center',
-            }}>
-            {/* <Image
-                source={
-                  accountInfo.avatar
-                    ? {
-                        uri:
-                          HOST_IMAGE_UPLOAD + JSON.parse(accountInfo.avatar)[0],
-                      }
-                    : Images.avatarDefault
-                }
-                style={{width: 40, height: 40, borderRadius: 20}}
-              /> */}
-
-            <TouchableOpacity
-              onPress={this.onRefresh}
-              style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+      <View style={{flex: 1, backgroundColor: '#FFF'}}>
+        <HeaderComponent
+          navigation={navigation}
+          left
+          right
+          iconLeft="ios-arrow-back"
+          iconLeftType="Ionicons"
+          title={info?.name || 'Trang cá nhân'}
+          onPressLeft={this.goBack}
+        />
+        <ScrollView
+          refreshControl={this.refreshControl()}
+          showsVerticalScrollIndicator={false}>
+          <View style={{margin: 16, alignItems: 'center'}}>
+            <View style={{position: 'absolute'}}>
               <Image
-                source={Images.iconLogin2}
-                style={{width: 26, height: 26}}
-              />
-              <Text
+                source={Images.thumbdefault}
                 style={{
-                  fontSize: 26,
-                  color: color.primaryColor,
-                  fontWeight: 'bold',
-                  marginLeft: 8,
-                  fontStyle: 'italic',
-                }}>
-                Newsfeed
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Notification')}>
-              <Icon
-                name={'ios-notifications-outline'}
-                type={'Ionicons'}
-                style={{
-                  fontSize: 24,
-                  color: color.primaryColor,
+                  width: dvWidth - 32,
+                  height: dvWidth / 2,
+                  borderRadius: 6,
                 }}
               />
-            </TouchableOpacity>
+            </View>
+            <View style={{marginTop: dvWidth / 3, alignItems: 'center'}}>
+              <TouchableOpacity>
+                <Image
+                  source={
+                    info?.avatar
+                      ? {
+                          uri: HOST_IMAGE_UPLOAD + JSON.parse(info.avatar)[0],
+                        }
+                      : Images.avatarDefault
+                  }
+                  style={{
+                    width: dvWidth * 0.3 - 5,
+                    height: dvWidth * 0.3 - 5,
+                    borderColor: '#FFF',
+                    borderWidth: 2,
+                    borderRadius: (dvWidth * 0.3 - 5) / 2,
+                  }}
+                />
+              </TouchableOpacity>
+              <View
+                style={{position: 'absolute', top: 50, alignItems: 'center'}}>
+                <Text
+                  style={{fontWeight: 'bold', color: '#FFF6', fontSize: 16}}>
+                  E BOOK APP
+                </Text>
+              </View>
+              <Text
+                style={{
+                  fontSize: 22,
+                  fontWeight: 'bold',
+                  marginLeft: 12,
+                  marginTop: 8,
+                }}>
+                {info?.name}
+              </Text>
+              <View>
+                <Text style={{color: color.primaryColor, marginTop: 8}}>
+                  ({data?.length} bài đăng)
+                </Text>
+              </View>
+              {info?.id !== accountInfo.id ? (
+                <TouchableOpacity
+                  style={{
+                    width: setWidth('80%'),
+                    backgroundColor: color.primaryColor,
+                    padding: 10,
+                    borderRadius: 6,
+                    marginTop: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  onPress={this.alert}>
+                  <Text style={{color: color.white}}>Theo dõi</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
-          <Content
-            refreshing={refreshing}
-            refreshControl={this.refreshControl()}>
-            <View style={{flexDirection: 'row', padding: 16}}>
+          <View style={{padding: 16}}>
+            <View style={{flexDirection: 'row'}}>
+              <View
+                style={{
+                  width: 3,
+                  height: 20,
+                  backgroundColor: color.primaryColor,
+                }}
+              />
+              <Text style={{marginLeft: 8, fontWeight: 'bold'}}>
+                Thông tin cá nhân
+              </Text>
+            </View>
+            <View>
+              <View style={{flexDirection: 'row', marginTop: 8}}>
+                <Icon
+                  name={'location'}
+                  type={'EvilIcons'}
+                  style={{width: 30}}
+                />
+                <Text style={{padding: 4}}>
+                  {info?.address || 'Chưa cập nhật'}
+                </Text>
+              </View>
+              <View style={{flexDirection: 'row', marginTop: 8}}>
+                <Icon
+                  name={'envelope'}
+                  type={'EvilIcons'}
+                  style={{width: 30}}
+                />
+                <Text style={{padding: 4}}>
+                  {info?.email || 'Chưa cập nhật'}
+                </Text>
+              </View>
+              <View style={{flexDirection: 'row', marginTop: 8}}>
+                <Icon
+                  name={'phone'}
+                  type={'SimpleLineIcons'}
+                  style={{fontSize: 18, width: 30, paddingLeft: 4}}
+                />
+                <Text style={{padding: 4}}>
+                  {info?.phone || 'Chưa cập nhật'}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <View style={{paddingHorizontal: 16}}>
+            <View style={{flexDirection: 'row'}}>
+              <View
+                style={{
+                  width: 3,
+                  height: 20,
+                  backgroundColor: color.primaryColor,
+                }}
+              />
+              <Text style={{marginLeft: 8, fontWeight: 'bold', flex: 1}}>
+                Album ảnh
+              </Text>
+              {listImage?.length > 6 ? (
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate('AlbumAll', {
+                      data: listImage,
+                    })
+                  }>
+                  <Text style={{color: color.primaryColor, fontSize: 13}}>
+                    Xem thêm
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+          <View>
+            <FlatList
+              data={this.formatData(listImage, 4).filter(item => !item.empty)}
+              numColumns={4}
+              style={{paddingVertical: 16, paddingHorizontal: 12}}
+              // columnWrapperStyle={{flex: 1, flexWrap: 'wrap'}}
+              renderItem={this.renderImage}
+              keyExtractor={() => String(Math.random())}
+            />
+          </View>
+          {info?.id === accountInfo.id ? (
+            <View style={{flexDirection: 'row', paddingHorizontal: 16}}>
               <TouchableOpacity
                 style={{
                   backgroundColor: '#FFF',
@@ -502,7 +580,7 @@ class News extends PureComponent {
                           }
                         : Images.avatarDefault
                     }
-                    style={{width: 40, height: 40, borderRadius: 20}}
+                    style={{width: 30, height: 30, borderRadius: 15}}
                   />
                   <Text
                     note
@@ -551,104 +629,38 @@ class News extends PureComponent {
                 </View>
               </TouchableOpacity>
             </View>
-            <View style={{margin: 16}}>
-              <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <View
-                  style={{width: 4, height: 24, backgroundColor: '#00c068'}}
-                />
-                <Text style={{marginLeft: 5, fontSize: 18}}>Chủ đề HOT</Text>
-              </View>
+          ) : null}
+          <View style={{paddingHorizontal: 16, paddingTop: 32}}>
+            <View style={{flexDirection: 'row'}}>
               <View
                 style={{
-                  flexWrap: 'wrap',
-                  flex: 1,
-                  marginVertical: 8,
-                  flexDirection: 'row',
-                }}>
-                <FlatList
-                  data={categories}
-                  horizontal
-                  contentContainerStyle={{flex: 1, flexWrap: 'wrap'}}
-                  keyExtractor={() => String(Math.random())}
-                  renderItem={this.renderCate}
-                />
-              </View>
-            </View>
-            <View style={{margin: 16}}>
-              <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <View
-                  style={{width: 4, height: 24, backgroundColor: '#00c068'}}
-                />
-                <Text style={{marginLeft: 5, fontSize: 18}}>Bài viết</Text>
-              </View>
-              <LazyLoadingProject length={1} visible={lazy} />
-              <VirtualizedList
-                getItem={(d, index) => d[index]}
-                getItemCount={d => d?.length}
-                data={data}
-                style={{marginTop: 16}}
-                contentContainerStyle={{marginVertical: 16}}
-                keyExtractor={item => String(item.id)}
-                renderItem={this.renderItem}
-                maxToRenderPerBatch={6}
-                updateCellsBatchingPeriod={100}
-                removeClippedSubviews
-                extraData={data}
+                  width: 3,
+                  height: 20,
+                  backgroundColor: color.primaryColor,
+                }}
               />
-            </View>
-          </Content>
-        </View>
-        <Modal
-          isVisible={modalRule}
-          backdropOpacity={0.5}
-          backdropColor="#000"
-          animationIn="fadeIn"
-          animationOut="fadeOut"
-          animationInTiming={300}
-          animationOutTiming={300}
-          backdropTransitionInTiming={300}
-          backdropTransitionOutTiming={300}
-          useNativeDriver
-          hideModalContentWhileAnimating
-          onBackdropPress={this.closePopup}
-          onBackButtonPress={this.closePopup}
-          style={styles.modal}>
-          <View
-            style={{
-              width: setWidth('80%'),
-              backgroundColor: '#FFF',
-              borderRadius: 4,
-              padding: 16,
-            }}>
-            <View style={{alignItems: 'center'}}>
-              <Image
-                source={Images.imgRules}
-                style={{width: 200, height: 200}}
-                resizeMode="contain"
-              />
-            </View>
-
-            <Text style={{fontSize: 22}}>Nội quy trong cộng đồng:</Text>
-            <View>
-              {rules.map(item => (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    width: setWidth('60%'),
-                    paddingVertical: 8,
-                  }}>
-                  <Icon
-                    name="dot-single"
-                    type="Entypo"
-                    style={{color: '#00c068'}}
-                  />
-                  <Text style={{fontSize: 16}}>{item}</Text>
-                </View>
-              ))}
+              <Text style={{marginLeft: 8, fontWeight: 'bold'}}>
+                {info?.id === accountInfo.id ? 'Bài đăng của bạn' : 'Bài đăng'}
+              </Text>
             </View>
           </View>
-        </Modal>
-      </Container>
+          <View style={{alignItems: 'center'}}>
+            <VirtualizedList
+              getItem={(d, index) => d[index]}
+              getItemCount={d => d?.length}
+              data={data}
+              style={{marginTop: 16}}
+              contentContainerStyle={{paddingHorizontal: 16}}
+              keyExtractor={item => String(item.id)}
+              renderItem={this.renderItem}
+              maxToRenderPerBatch={6}
+              updateCellsBatchingPeriod={100}
+              removeClippedSubviews
+              extraData={data}
+            />
+          </View>
+        </ScrollView>
+      </View>
     );
   }
 }
@@ -687,4 +699,4 @@ const mapStateToProps = state => ({
   accountInfo: state.accountReducer,
 });
 
-export default connect(mapStateToProps)(News);
+export default connect(mapStateToProps)(ProfileSocial);

@@ -388,6 +388,7 @@ class AddNewStore extends PureComponent {
                 }}>
                 <TextInput
                   value={phone}
+                  maxLength={10}
                   keyboardType={'phone-pad'}
                   onChangeText={text => this.setState({phone: text})}
                   style={{marginLeft: 15, color: '#0D0E10'}}

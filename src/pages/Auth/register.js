@@ -28,15 +28,26 @@ export default class Register extends PureComponent {
       msg: null,
       msgError: null,
     };
+    this.deviceId = null;
   }
 
-  componentDidMount = () => {};
+  componentDidMount = async () => {
+    if (this.deviceId === null) {
+      try {
+        this.deviceId = await AsyncStorage.getItem('playerId');
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  };
 
   submit = async () => {
     const {email, name, password, c_password} = this.state;
     const {navigation} = this.props;
     const {getPassword} = navigation.state.params;
-    if (!name || !email) return;
+    if (!name || !email) {
+      return;
+    }
     try {
       this.setState({loading: true});
       const data = {
@@ -44,20 +55,23 @@ export default class Register extends PureComponent {
         name,
         password,
         c_password,
+        deviceId: JSON.parse(this.deviceId),
       };
       const response = await postToServer(getApiUrl(API.REGISTER), data);
       if (response.status === -1) {
         this.setState({msg: response.msg});
         return;
       }
-      Toast.show({
-        text: 'Đăng ký thành công!',
-        duration: 2000,
-        position: 'top',
-        type: 'success',
-      });
+      // Toast.show({
+      //   text: 'Đăng ký thành công!',
+      //   duration: 2000,
+      //   position: 'top',
+      //   type: 'success',
+      // });
       await AsyncStorage.setItem('username', email);
-      if (getPassword) getPassword(password);
+      if (getPassword) {
+        getPassword(password);
+      }
       this.goBack();
     } catch (e) {
       console.log(e);

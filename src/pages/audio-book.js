@@ -6,6 +6,9 @@ import {
   StyleSheet,
   FlatList,
   StatusBar,
+  RefreshControl,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import {Icon, Text} from 'native-base';
 import ViewBookAudio from '../pages/view-book-audio';
@@ -14,6 +17,8 @@ import ItemAudio from '../pages/List-detail/audio-item';
 import {connect} from 'react-redux';
 import {getFromServer} from '../config';
 import {API, getApiUrl} from '../config/server';
+import {Images} from '../assets/image';
+import color from '../assets/static-data/color';
 
 class AudioBook extends PureComponent {
   constructor(props) {
@@ -25,45 +30,24 @@ class AudioBook extends PureComponent {
       dataSound: {},
       page: 1,
       keyword: '',
+      refreshing: false,
     };
   }
 
   componentDidMount() {
-    const data = [
-      {
-        id: '1',
-        name: 'Book Audio 1',
-        link:
-          'http://files.vixahoi.com/ThuVienSachNoi/VanHoc/NuocNgoai/LocDinhKy/01.LocDinhKy-Phan1.mp3',
-        image:
-          'https://p.bigstockphoto.com/GeFvQkBbSLaMdpKXF1Zv_bigstock-Aerial-View-Of-Blue-Lakes-And--227291596.jpg',
-        title: 'Book Audio 1',
-        artist: 'N0 John',
-        category: 'Hài hước',
-      },
-      {
-        id: '2',
-        name: 'Book Audio 2',
-        link:
-          'http://data.thuviensachnoi.vn//ThuVienSachNoi/VanHoc/VanHocNuocNgoai/NuHoangAiCap/NuHoangAiCap02.mp3',
-        image:
-          'https://p.bigstockphoto.com/GeFvQkBbSLaMdpKXF1Zv_bigstock-Aerial-View-Of-Blue-Lakes-And--227291596.jpg',
-        title: 'Book Audio 1',
-        artist: 'N0 John',
-        category: 'Kinh dị',
-      },
-    ];
     this.getData();
   }
 
   getData = async () => {
     const {accountInfo} = this.props;
-    const {page, keyword, data} = this.state;
-    this.setState({loading: true});
+    const {page, keyword, data, refreshing} = this.state;
+    if (!refreshing) {
+      this.setState({loading: true});
+    }
     try {
       const response = await getFromServer(getApiUrl(API.LIST_AUDIO), {
         page,
-        page_size: 16,
+        page_size: 50,
         keyword,
         token: accountInfo.access_token.token,
       });
@@ -72,7 +56,7 @@ class AudioBook extends PureComponent {
       });
     } catch (e) {
     } finally {
-      this.setState({loading: false});
+      this.setState({loading: false, refreshing: false});
     }
   };
 
@@ -99,8 +83,21 @@ class AudioBook extends PureComponent {
     );
   };
 
+  onRefresh = async () => {
+    await this.setState({refreshing: true, page: 1});
+    this.getData();
+  };
+
+  refreshControl() {
+    const {refreshing} = this.state;
+    return (
+      <RefreshControl refreshing={refreshing} onRefresh={this.onRefresh} />
+    );
+  }
+
   render() {
-    const {data, isShow, dataSound} = this.state;
+    const {data, isShow, dataSound, refreshing, loading} = this.state;
+    const {navigation} = this.props;
     return (
       <View style={styles.container}>
         {isShow && (
@@ -114,16 +111,58 @@ class AudioBook extends PureComponent {
             <ViewBookAudio close={this.close} data={dataSound} />
           </View>
         )}
-        <Text style={{marginTop: 32, textAlign: 'center', fontSize: 24}}>
-          Audio Book
-        </Text>
-        <View style={{marginTop: 16, marginBottom: 64}}>
-          <FlatList
-            data={data}
-            renderItem={this.renderItem}
-            keyExtractor={() => String(Math.random())}
-          />
-        </View>
+        <ScrollView
+          refreshing={refreshing}
+          refreshControl={this.refreshControl()}
+          showsVerticalScrollIndicator={false}>
+          <View
+            style={{
+              flexDirection: 'row',
+              marginTop: 24,
+              marginLeft: 24,
+              alignItems: 'center',
+              marginRight: 16,
+            }}>
+            <Image source={Images.iconLogin2} style={{width: 26, height: 26}} />
+            <Text
+              style={{
+                fontSize: 26,
+                color: color.primaryColor,
+                fontWeight: 'bold',
+                marginLeft: 8,
+                fontStyle: 'italic',
+                flex: 1,
+              }}>
+              AudioBook
+            </Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Notification')}>
+              <Icon
+                name={'ios-notifications-outline'}
+                type={'Ionicons'}
+                style={{
+                  fontSize: 24,
+                  color: color.primaryColor,
+                }}
+              />
+            </TouchableOpacity>
+          </View>
+          {loading ? (
+            <View
+              style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+              <ActivityIndicator color={color.primaryColor} />
+            </View>
+          ) : (
+            <View style={{marginTop: 16, marginBottom: 64}}>
+              <FlatList
+                data={data}
+                renderItem={this.renderItem}
+                removeClippedSubviews
+                keyExtractor={() => String(Math.random())}
+              />
+            </View>
+          )}
+        </ScrollView>
       </View>
     );
   }

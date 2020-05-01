@@ -35,7 +35,7 @@ class ListBookSearch extends PureComponent {
       try {
         const response = await getFromServer(getApiUrl(API.SEARCH_BOOK), {
           page: 1,
-          page_size: 16,
+          page_size: 50,
           keyword: text,
           token: accountInfo.access_token.token,
         });

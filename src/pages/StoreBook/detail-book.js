@@ -20,6 +20,7 @@ import {formatNumber} from '../../../components/until';
 import ShowImageView from '../../../components/show-image-view';
 import {connect} from 'react-redux';
 import {getFromServer} from '../../config';
+import DetailLoading from '../../../components/lazy-load/detail-loading';
 
 class DetailBook extends PureComponent {
   constructor(props) {
@@ -28,6 +29,7 @@ class DetailBook extends PureComponent {
       data: {},
       image: [],
       showImage: false,
+      loading: true,
     };
   }
 
@@ -35,7 +37,9 @@ class DetailBook extends PureComponent {
     const {navigation} = this.props;
     const {item, newImage} = navigation.state.params;
     // this.getData();
-    this.setState({data: item, image: newImage});
+    setTimeout(() => {
+      this.setState({data: item, image: newImage, loading: false});
+    }, 500);
   };
 
   goBack = () => {
@@ -68,10 +72,9 @@ class DetailBook extends PureComponent {
   };
 
   render() {
-    const {navigation, accountInfo} = this.props;
-    const {data, image, showImage} = this.state;
-    console.log(data);
-    console.log(image);
+    const {accountInfo} = this.props;
+    const {data, image, showImage, loading} = this.state;
+    if (loading) return <DetailLoading visible={loading} type={'product'} />;
     return (
       <View style={{flex: 1}}>
         <StatusBar backgroundColor="#FFF" animated barStyle="dark-content" />
@@ -131,7 +134,7 @@ class DetailBook extends PureComponent {
                 <TouchableOpacity
                   style={{margin: 16}}
                   onPress={this.showModalImage.bind(this, true, 0)}>
-                  <Image
+                  <FastImage
                     source={{uri: HOST_IMAGE_UPLOAD + item}}
                     style={{width: 60, height: 80, borderRadius: 6}}
                   />

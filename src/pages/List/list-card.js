@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   Linking,
+  Dimensions,
 } from 'react-native';
 import HeaderComponent from '../../components/headerComponents';
 import {connect} from 'react-redux';
@@ -23,7 +24,8 @@ import {formatNumber} from '../../../components/until';
 import {accountActionTypes} from '../../actions/type';
 import {LazyLoadingProduct} from '../../../components/lazy-load';
 import {saveAccountInfo} from '../../config/storage';
-
+import color from '../../assets/static-data/color';
+const {width: dvWidth} = Dimensions.get('window');
 class ListCard extends PureComponent {
   constructor(props) {
     super(props);
@@ -162,99 +164,119 @@ class ListCard extends PureComponent {
           justifyContent: 'center',
           backgroundColor: '#FFF',
         }}>
-        <FastImage
-          source={Images.imgSuccess}
-          style={{height: 230, width: 230}}
-          resizeMode="contain"
-        />
-        <Text
+        <View
           style={{
-            fontSize: 20,
-            paddingHorizontal: 32,
-            textAlign: 'center',
-            color: '#3F3356',
+            width: dvWidth - 32,
+            backgroundColor: '#fff',
+            shadowColor: '#000',
+            alignItems: 'center',
+            shadowOffset: {
+              width: 0,
+              height: 1,
+            },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+            borderRadius: 6,
           }}>
-          Chúc mừng bạn đã đổi thẻ cào thành công, Nạp ngay thôi !!!
-        </Text>
-        <View>
-          <TouchableOpacity
+          <Text style={{fontWeight: 'bold', margin: 16}}>
+            E BOOK - SÁCH ĐIỆN TỬ
+          </Text>
+          <Text
             style={{
-              height: 48,
-              borderRadius: 6,
-              width: setWidth('90%'),
-              justifyContent: 'center',
-              marginTop: 16,
-            }}
-            disabled>
-            <Text style={{fontSize: 20, marginLeft: 16}}>
-              Số seri:
-              <Text style={{color: '#00c068'}}>{infoCard.serial}</Text>
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{
-              height: 48,
-              borderRadius: 6,
-              width: setWidth('90%'),
-              justifyContent: 'center',
-              marginTop: 16,
-            }}
-            onPress={() => this.charge(infoCard.code)}>
-            <Text style={{fontSize: 20, marginLeft: 16}}>
-              Mã thẻ:
-              <Text style={{color: '#00c068'}}>{infoCard.code}</Text>
-            </Text>
-          </TouchableOpacity>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
+              fontSize: 17,
+              paddingHorizontal: 32,
+              textAlign: 'center',
+              color: '#3F3356',
             }}>
+            Chúc mừng bạn đã đổi thẻ cào thành công !!!
+          </Text>
+          <View>
             <TouchableOpacity
               style={{
-                height: 48,
                 borderRadius: 6,
-                width: setWidth('35%'),
-                backgroundColor: '#00c068',
+                width: setWidth('90%'),
                 justifyContent: 'center',
                 marginTop: 16,
               }}
+              disabled>
+              <Text style={{fontSize: 16, marginLeft: 16, color: '#A7A9BC'}}>
+                Số seri:
+                <Text style={{color: color.primaryColor}}>
+                  {' '}
+                  {infoCard.serial}
+                </Text>
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                borderRadius: 6,
+                width: setWidth('90%'),
+                justifyContent: 'center',
+                marginTop: 16,
+              }}
+              disabled
               onPress={() => this.charge(infoCard.code)}>
-              <Text
-                style={{
-                  color: '#FFF',
-                  textTransform: 'uppercase',
-                  textAlign: 'center',
-                  fontSize: 17,
-                }}>
-                Nạp ngay
+              <Text style={{fontSize: 16, marginLeft: 16, color: '#A7A9BC'}}>
+                Mã thẻ:
+                <Text style={{color: color.primaryColor}}>
+                  {' '}
+                  {infoCard.code}
+                </Text>
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity
+
+            <View
               style={{
-                height: 48,
-                borderRadius: 6,
-                width: setWidth('35%'),
-                backgroundColor: '#FFF',
-                borderColor: '#00c068',
-                borderWidth: 1,
+                alignItems: 'center',
                 justifyContent: 'center',
-                marginTop: 16,
-                marginLeft: 16,
-              }}
-              onPress={this.dismissSuccess}>
-              <Text
+                flexDirection: 'row',
+                marginBottom: 16,
+              }}>
+              <TouchableOpacity
                 style={{
-                  color: '#00c068',
-                  textTransform: 'uppercase',
-                  textAlign: 'center',
-                  fontSize: 17,
-                }}>
-                Quay lại
-              </Text>
-            </TouchableOpacity>
+                  height: 32,
+                  borderRadius: 6,
+                  width: setWidth('35%'),
+                  backgroundColor: color.primaryColor,
+                  justifyContent: 'center',
+                  marginTop: 16,
+                }}
+                onPress={() => this.charge(infoCard.code)}>
+                <Text
+                  style={{
+                    color: '#FFF',
+                    textTransform: 'uppercase',
+                    textAlign: 'center',
+                    fontSize: 17,
+                  }}>
+                  Nạp ngay
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  height: 32,
+                  borderRadius: 6,
+                  width: setWidth('35%'),
+                  backgroundColor: '#FFF',
+                  borderColor: color.primaryColor,
+                  borderWidth: 1,
+                  justifyContent: 'center',
+                  marginTop: 16,
+                  marginLeft: 16,
+                }}
+                onPress={this.dismissSuccess}>
+                <Text
+                  style={{
+                    color: color.primaryColor,
+                    textTransform: 'uppercase',
+                    textAlign: 'center',
+                    fontSize: 17,
+                  }}>
+                  Quay lại
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
@@ -325,7 +347,7 @@ class ListCard extends PureComponent {
                     name="ios-checkmark-circle"
                     type="Ionicons"
                     style={{
-                      color: '#00c068',
+                      color: color.primaryColor,
                       marginRight: 16,
                       fontSize: 18,
                       position: 'absolute',
@@ -345,7 +367,7 @@ class ListCard extends PureComponent {
               alignItems: 'center',
               justifyContent: 'center',
               height: 48,
-              backgroundColor: '#00c068',
+              backgroundColor: color.primaryColor,
             }}
             onPress={this.skip}>
             {loading ? (

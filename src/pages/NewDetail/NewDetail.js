@@ -13,6 +13,7 @@ import {
   RefreshControl,
   StatusBar,
   Platform,
+  Dimensions,
 } from 'react-native';
 import {setWidth, setHeight} from '../../cores/baseFuntion';
 import HeaderComponent from '../../components/headerComponents';
@@ -32,7 +33,8 @@ import {postToServerWithAccount} from '../../../components/fetch';
 import ProgressDialog from '../../../components/ProgressDialog';
 import {LazyLoadingNews} from '../../../components/lazy-load';
 import ShowImageView from '../../../components/show-image-view';
-
+import color from '../../assets/static-data/color';
+const {width: dvWidth} = Dimensions.get('window');
 class NewDetail extends Component {
   constructor(props) {
     super(props);
@@ -188,20 +190,29 @@ class NewDetail extends Component {
   };
 
   showModalImage = (state, index) => {
-    if (Platform.OS === 'ios') StatusBar.setHidden(state, 'slide');
+    if (Platform.OS === 'ios') {
+      StatusBar.setHidden(state, 'slide');
+    }
     this.setState({showImage: state});
+  };
+
+  onPressComment = item => {
+    this.setState({content: `@${item.author} `});
   };
 
   renderComment = ({item}) => {
     const {accountInfo} = this.props;
     const dataImage = item.image ? JSON.parse(item.image) : [];
     return (
-      <View>
+      <TouchableOpacity
+        style={{borderBottomColor: 'whitesmoke', borderBottomWidth: 1}}
+        onPress={() => this.onPressComment(item)}
+        disabled={item.user_id === accountInfo.id}>
         <View
           style={{
             backgroundColor: '#FFF',
             paddingHorizontal: 16,
-            paddingVertical: 5,
+            paddingVertical: 12,
             flexDirection: 'row',
           }}>
           <View style={{flexDirection: 'row'}}>
@@ -221,19 +232,8 @@ class NewDetail extends Component {
           </View>
           <View
             style={{
-              marginVertical: 8,
               flex: 1,
               marginHorizontal: 16,
-              backgroundColor: '#FFF',
-              shadowColor: '#000',
-              shadowOffset: {
-                width: 0,
-                height: 1,
-              },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 3,
-              padding: 8,
               borderRadius: 6,
             }}>
             <View style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -246,53 +246,61 @@ class NewDetail extends Component {
                 numberOfLines={1}>
                 {item.author}
               </Text>
-              <View
-                style={{
-                  width: 2,
-                  height: 2,
-                  borderRadius: 1,
-                  backgroundColor: '#CCC',
-                  marginHorizontal: 8,
-                }}
-              />
-              <Text note style={{flex: 1}}>
-                {formatDateNow(item.created_at)}
+            </View>
+
+            {item.content?.includes('@') ? (
+              <Text>
+                <Text style={{color: color.primaryColor}}>
+                  {item.content?.split(' ')[0]}
+                </Text>{' '}
+                {item.content?.split(' ').slice(1, item.content?.length)}
               </Text>
-              {item.user_id === accountInfo.id && (
-                <View>
-                  <TouchableOpacity onPress={() => this.deleteComment(item)}>
-                    <Icon
-                      name={'delete'}
-                      type={'MaterialIcons'}
-                      style={{fontSize: 16, color: '#AAA'}}
-                    />
-                  </TouchableOpacity>
-                </View>
+            ) : (
+              <Text>{item.content}</Text>
+            )}
+
+            <View style={{justifyContent: 'flex-start'}}>
+              {item.image && (
+                <FastImage
+                  source={{uri: HOST_IMAGE_UPLOAD + dataImage[0]}}
+                  style={{
+                    width: dvWidth * 0.2,
+                    height: dvWidth * 0.6,
+                    marginTop: 8,
+                    aspectRatio: 1,
+                  }}
+                  resizeMode="center"
+                />
               )}
             </View>
-            <Text>{item.content}</Text>
-            {item.image && (
-              <Image
-                source={{uri: HOST_IMAGE_UPLOAD + dataImage[0]}}
-                style={{
-                  width: setWidth('70%'),
-                  height: setWidth('30%'),
-                  marginTop: 8,
-                  borderRadius: 6,
-                }}
-                resizeMode="cover"
-              />
-            )}
           </View>
         </View>
-      </View>
+        <View style={{flexDirection: 'row'}}>
+          <Text note style={{flex: 1, marginLeft: '18%', marginBottom: 8}}>
+            {formatDateNow(item.created_at)}
+          </Text>
+          {item.user_id === accountInfo.id && (
+            <View>
+              <TouchableOpacity
+                onPress={() => this.deleteComment(item)}
+                style={{marginRight: 16}}>
+                <Icon
+                  name={'delete'}
+                  type={'MaterialIcons'}
+                  style={{fontSize: 16, color: '#AAA'}}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
     );
   };
 
   onRefresh = () => {
     const {navigation} = this.props;
     const {data} = navigation.state.params;
-    this.setState({lazy: true, comments: []}, () => this.getComment(data.id));
+    this.setState({}, () => this.getComment(data.id));
   };
 
   refreshControl() {
@@ -348,7 +356,11 @@ class NewDetail extends Component {
               borderRadius: 4,
               padding: 16,
             }}>
-            <View style={{flexDirection: 'row'}}>
+            <TouchableOpacity
+              style={{flexDirection: 'row'}}
+              onPress={() =>
+                navigation.navigate('ProfileSocial', {user_id: data.user_id})
+              }>
               <Image
                 source={
                   data.avatar_author
@@ -376,7 +388,7 @@ class NewDetail extends Component {
                 </Text>
                 <Text note>{formatDateNow(data.created_at)}</Text>
               </View>
-            </View>
+            </TouchableOpacity>
             <View style={{marginVertical: 8}}>
               <Text>{data.content}</Text>
             </View>
@@ -460,8 +472,8 @@ class NewDetail extends Component {
           style={styles.modal}>
           <View
             style={{
-              width: setWidth('100%'),
-              height: setHeight('80%'),
+              flex: 1,
+              width: '100%',
               backgroundColor: '#FFF',
               shadowColor: '#000',
               shadowOffset: {
@@ -471,8 +483,6 @@ class NewDetail extends Component {
               shadowOpacity: 0.1,
               shadowRadius: 4,
               elevation: 6,
-              borderTopRightRadius: 6,
-              borderTopLeftRadius: 6,
             }}>
             <ProgressDialog
               visible={uploading}
@@ -509,7 +519,6 @@ class NewDetail extends Component {
             <LazyLoadingNews length={1} visible={lazy} />
             <FlatList
               style={{flex: 1}}
-              contentContainerStyle={{paddingVertical: 16}}
               data={comments}
               renderItem={this.renderComment}
               refreshing={refreshing}
@@ -552,24 +561,17 @@ class NewDetail extends Component {
             )}
             <View
               style={{
-                backgroundColor: '#FFF',
-                shadowColor: '#000',
-                shadowOffset: {
-                  width: 2,
-                  height: 2,
-                },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 4,
-                borderTopColor: 'whitesmoke',
-                borderTopWidth: 2,
+                backgroundColor: 'whitesmoke',
                 flexDirection: 'row',
                 alignItems: 'center',
+                marginHorizontal: 16,
+                borderRadius: 32,
+                marginVertical: 8,
               }}>
               <TextInput
                 placeholder="Aa..."
                 // autoFocus
-                style={{color: '#000', fontSize: 16, flex: 1}}
+                style={{color: '#000', fontSize: 16, flex: 1, marginLeft: 8}}
                 value={content}
                 onChangeText={text => this.setState({content: text})}
               />
@@ -577,7 +579,7 @@ class NewDetail extends Component {
                 <TouchableOpacity
                   style={{marginRight: 16}}
                   onPress={this.selectImage}>
-                  <Icon name="camera" />
+                  <Icon name="camera" style={{color: '#A7A9BC'}} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{marginRight: 16}}
@@ -585,7 +587,10 @@ class NewDetail extends Component {
                   disabled={!content || commenting}>
                   <Icon
                     name="send"
-                    style={{color: commenting ? '#AAA' : '#000'}}
+                    style={{
+                      color:
+                        commenting || !content ? '#A7A9BC' : color.primaryColor,
+                    }}
                   />
                 </TouchableOpacity>
               </View>

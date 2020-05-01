@@ -22,12 +22,13 @@ import ImageBrowser from '../../../components/multi-select-image/ImageBrowser';
 import ImageManipulator from '../../lib/react-native-image-manipulator';
 import ProgressDialog from '../../../components/ProgressDialog';
 import {setWidth} from '../../cores/baseFuntion';
+import color from '../../assets/static-data/color';
 
 class CreatePost extends PureComponent {
   constructor(props) {
     super(props);
     this.state = {
-      visible: true,
+      visible: false,
       dataImage: [],
       content: '',
       category_id: null,
@@ -39,6 +40,10 @@ class CreatePost extends PureComponent {
   }
 
   componentDidMount = () => {
+    const {navigation} = this.props;
+    if (navigation.state.params) {
+      this.setState({visible: navigation.state.params.visible});
+    }
     this.getCategory();
   };
 
@@ -56,7 +61,7 @@ class CreatePost extends PureComponent {
         page: 1,
         page_size: 50,
       });
-      this.setState({categories: response.data});
+      this.setState({categories: response.data.slice(0, 10)});
     } catch (e) {
       console.log(e);
     }
@@ -86,11 +91,10 @@ class CreatePost extends PureComponent {
         dataImage,
       );
       console.log(response.data, 'a');
+      const newImage = JSON.parse(response.data);
       this.setState({
         imageUpload:
-          imageUpload.length > 0
-            ? [...imageUpload, ...response.data]
-            : response.data,
+          imageUpload.length > 0 ? [...imageUpload, ...newImage] : newImage,
       });
     } catch (e) {
       console.log(e);
@@ -107,7 +111,7 @@ class CreatePost extends PureComponent {
       const data = {
         content,
         category_id,
-        image: imageUpload.length > 0 ? imageUpload : null,
+        image: imageUpload.length > 0 ? JSON.stringify(imageUpload) : null,
         token: accountInfo.access_token.token,
         user_id: accountInfo.id,
       };
@@ -287,14 +291,14 @@ class CreatePost extends PureComponent {
               onChangeText={text => this.setState({content: text})}
               multiline
             />
-            <View style={{marginTop: 16}}>
-              <FlatList
-                data={dataImage}
-                numColumns={3}
-                renderItem={this.renderItem}
-                keyExtractor={() => String(Math.random())}
-              />
-            </View>
+          </View>
+          <View style={{marginTop: 16}}>
+            <FlatList
+              data={dataImage}
+              numColumns={3}
+              renderItem={this.renderItem}
+              keyExtractor={() => String(Math.random())}
+            />
           </View>
           {!visible && (
             <View style={{padding: 16}}>
@@ -323,7 +327,7 @@ class CreatePost extends PureComponent {
         {dataImage.length > 0 || content ? (
           <TouchableOpacity
             style={{
-              backgroundColor: 'rgba(255,16,27,0.77)',
+              backgroundColor: color.primaryColor,
               alignItems: 'center',
               justifyContent: 'center',
               height: 48,

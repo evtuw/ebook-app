@@ -1,27 +1,25 @@
 import React, {PureComponent} from 'react';
 import {
-  View,
-  ScrollView,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
+  DeviceEventEmitter,
   Dimensions,
-  StatusBar,
+  FlatList,
   ImageBackground,
   Linking,
   RefreshControl,
-  DeviceEventEmitter,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import {connect} from 'react-redux';
 import {Images} from '../../assets/image';
-import FastImage from 'react-native-fast-image';
 import {Icon, Text} from 'native-base';
-import {formatDateNow, formatNumber} from '../../../components/until';
 import HeaderSearch from '../../components/header-search';
-import moment from 'moment';
 import {getFromServer, postToServer} from '../../config';
 import {API, getApiUrl, HOST_IMAGE_UPLOAD} from '../../config/server';
+import DetailLoading from '../../../components/lazy-load/detail-loading';
+import ItemBookSelling from './item-list/item-book-selling';
 
 const ITEM_WIDTH = Dimensions.get('window').width;
 
@@ -32,14 +30,20 @@ class ListBookSelling extends PureComponent {
       data: [],
       keySearch: '',
       info: null,
+      loading: false,
+      list: [],
+      page: 1,
+      endLoadMore: false,
+      page_size: 50,
+      loadExpired: false,
     };
   }
 
   async componentDidMount() {
     const {navigation} = this.props;
     const {store_id, user_id} = navigation.state.params;
-    await this.getDetailStore(user_id);
-    this.getData(store_id);
+    this.getDetailStore(user_id);
+    await this.getData(store_id);
     this.listener = DeviceEventEmitter.addListener('LoadData', () =>
       this.onRefresh(),
     );
@@ -76,20 +80,29 @@ class ListBookSelling extends PureComponent {
 
   getData = async store_id => {
     const {accountInfo} = this.props;
-    const {page, keySearch} = this.state;
+    const {page, keySearch, refreshing, list, page_size} = this.state;
+    if (!refreshing) this.setState({loading: true});
     try {
       const response = await getFromServer(getApiUrl(API.LIST_DETAIL_STORE), {
         token: accountInfo.access_token.token,
         store_id,
         page,
-        page_size: 16,
+        page_size,
         keyword: keySearch,
       });
-      this.setState({data: response.data[0]});
+      if (response.status === 1) {
+        this.setState({
+          data: response.data[0],
+          list:
+            page > 1
+              ? [...list, ...response.data[0].list]
+              : response.data[0].list,
+        });
+      }
     } catch (e) {
       console.log(e);
     } finally {
-      this.setState({refreshing: false});
+      this.setState({refreshing: false, loading: false, loadMore: false});
     }
   };
 
@@ -102,7 +115,6 @@ class ListBookSelling extends PureComponent {
         token: accountInfo.access_token.token,
       });
       if (response.status === 1) {
-        DeviceEventEmitter.emit('LoadData');
         this.onRefresh();
       }
     } catch (e) {
@@ -117,83 +129,16 @@ class ListBookSelling extends PureComponent {
 
   renderItemMyStore = ({item}) => {
     const {navigation, accountInfo} = this.props;
-    const {data} = this.state;
-    const today = moment().format('YYYY-MM-DD');
-    let isNew = 'HOT';
-    if (moment(item.created_at).format('YYYY-MM-DD') === today) {
-      isNew = 'NEW';
-    }
-    const newImage = item.image ? JSON.parse(item.image) : null;
+    const {data, loadExpired} = this.state;
     return (
-      <TouchableOpacity
-        style={styles.item}
-        onPress={() =>
-          navigation.navigate('DetailBookScreen', {
-            id: item.id,
-            item: {...item, ...data},
-            newImage,
-          })
-        }>
-        <View style={styles.contentContainer}>
-          <FastImage
-            style={styles.imageBackground}
-            source={
-              newImage?.length > 0
-                ? {
-                    uri: HOST_IMAGE_UPLOAD + newImage[0],
-                    priority: FastImage.priority.normal,
-                  }
-                : Images.thumbdefault
-            }
-            resizeMode="cover"
-          />
-          <View
-            style={{
-              position: 'absolute',
-              backgroundColor:
-                isNew === 'NEW'
-                  ? 'rgba(30,234,51,0.46)'
-                  : 'rgba(234,25,106,0.71)',
-              paddingHorizontal: 6,
-              paddingVertical: 2,
-              left: 8,
-              top: 8,
-              borderRadius: 4,
-            }}>
-            <Text style={{color: '#FFF'}}>{isNew}</Text>
-          </View>
-          <View style={styles.content}>
-            <Text style={styles.name} numberOfLines={2}>
-              {item.title_book}
-            </Text>
-            <View style={{height: 30}}>
-              <Text style={styles.address} numberOfLines={2}>
-                {item.description}
-              </Text>
-            </View>
-            <View style={styles.smallContent}>
-              <Text style={styles.price}>{formatNumber(item.price)} VNĐ</Text>
-            </View>
-            <View
-              style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-              <Text style={styles.postTime}>
-                {formatDateNow(item.created_at)}
-              </Text>
-              <TouchableOpacity
-                disabled={data.user_id !== accountInfo.id}
-                onPress={() => this.updateExpired(item)}>
-                <Text
-                  style={{
-                    color: item.is_expired === 0 ? '#00c068' : '#FF2D55',
-                    textTransform: 'uppercase',
-                  }}>
-                  {item.is_expired === 0 ? 'Chưa bán' : 'Đã bán'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </TouchableOpacity>
+      <ItemBookSelling
+        updateExpired={this.updateExpired}
+        loadExpired={loadExpired}
+        data={data}
+        item={item}
+        navigation={navigation}
+        accountInfo={accountInfo}
+      />
     );
   };
 
@@ -221,7 +166,7 @@ class ListBookSelling extends PureComponent {
   onRefresh = async () => {
     const {navigation} = this.props;
     const {store_id} = navigation.state.params;
-    await this.setState({refreshing: true, page: 1});
+    await this.setState({page: 1, refreshing: true});
     this.getData(store_id);
   };
 
@@ -234,8 +179,10 @@ class ListBookSelling extends PureComponent {
 
   render() {
     const {navigation, accountInfo} = this.props;
-    const {data, keySearch, refreshing, info} = this.state;
+    const {data, keySearch, refreshing, info, loading, list} = this.state;
+    console.log(list);
     const {store_id} = navigation.state.params;
+    if (loading) return <DetailLoading visible={loading} />;
     return (
       <View style={styles.container}>
         <StatusBar
@@ -422,7 +369,7 @@ class ListBookSelling extends PureComponent {
           </View>
           <FlatList
             contentContainerStyle={{paddingHorizontal: 16}}
-            data={data.list}
+            data={list}
             keyExtractor={item => String(item.id)}
             renderItem={this.renderItemMyStore}
             showsHorizontalScrollIndicator={false}
@@ -550,6 +497,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
     borderRadius: 3,
     textAlign: 'center',
+  },
+  menuAction: {
+    marginLeft: '40%',
+    width: 154,
+    height: 88,
+    borderRadius: 8,
+  },
+  viewEmpty: {width: 10, height: 1},
+  labelEdit: {
+    color: '#3F3356',
+    fontWeight: 'normal',
+    fontSize: 15,
+    bottom: 10,
+  },
+  labelRemove: {
+    color: '#FF647C',
+    fontWeight: 'normal',
+    fontSize: 15,
+    bottom: 10,
   },
 });
 

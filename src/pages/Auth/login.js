@@ -30,29 +30,42 @@ class Login extends PureComponent {
       loading: false,
       showPass: true,
     };
+    this.playerId = null;
   }
 
   async componentDidMount() {
     const {navigation} = this.props;
-    const email = await AsyncStorage.getItem('username');
-    this.setState({email});
+    try {
+      this.playerId = await AsyncStorage.getItem('playerId');
+      const email = await AsyncStorage.getItem('username');
+      this.setState({email});
+      console.log(' this.playerId', this.playerId);
+    } catch (e) {
+      console.log(e);
+    }
     this.focus = navigation.addListener('didFocus', async () => {
       const email = await AsyncStorage.getItem('username');
       await this.setState({email});
-      this.submit();
+      // this.submit();
     });
   }
 
   submit = async () => {
     const {email, password} = this.state;
-    if (!email || !password) return;
+    if (!email || !password) {
+      return;
+    }
     try {
       this.setState({loading: true, error: false, msg: null});
-      const data = {email, password};
+      const data = {email, password, deviceId: JSON.parse(this.playerId)};
       const response = await postToServer(getApiUrl(API.LOGIN), data);
       let accountInfo = response.data;
 
       if (response.status === -1) {
+        this.setState({error: true, msg: response.message});
+        return;
+      }
+      if (response.status === -2) {
         this.setState({error: true, msg: response.message});
         return;
       }
@@ -101,6 +114,11 @@ class Login extends PureComponent {
     this.setState({showPass: !this.state.showPass});
   };
 
+  showForgotPass = () => {
+    const {navigation} = this.props;
+    navigation.navigate('ForgotPassScreen');
+  };
+
   render() {
     const {navigation} = this.props;
     const {email, password, loading, msg, error, showPass} = this.state;
@@ -124,7 +142,15 @@ class Login extends PureComponent {
             <Text style={styles.appName}>
               SÁCH <Text>ĐIỆN TỬ</Text>
             </Text>
-            <Text style={{color: '#FF2D55', marginBottom: 8}}>{msg}</Text>
+            <Text
+              style={{
+                color: '#FF2D55',
+                marginBottom: 8,
+                marginHorizontal: 32,
+                textAlign: 'center',
+              }}>
+              {msg}
+            </Text>
             <View
               style={[
                 styles.viewInput,
@@ -195,7 +221,7 @@ class Login extends PureComponent {
                   backgroundColor: email && password ? '#00c068' : '#D0c9d6',
                 },
               ]}
-              disabled={loading || (!email && !password)}
+              disabled={loading || !email || !password}
               onPress={this.submit}>
               {loading ? (
                 <ActivityIndicator color="#FFF" />
@@ -203,16 +229,30 @@ class Login extends PureComponent {
                 <Text style={styles.labelLogin}>Đăng nhập</Text>
               )}
             </TouchableOpacity>
-            <Text style={{marginTop: 32}}>- - - - - - - - - - - - - -</Text>
-            <Text style={{marginVertical: 16}}>hoặc</Text>
             <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('RegisterScreen', {
-                  getPassword: this.getPassword,
-                })
-              }>
-              <Text style={styles.labelRegister}>Đăng ký tại đây</Text>
+              style={{alignSelf: 'flex-end', marginRight: 64, marginTop: 16}}
+              onPress={this.showForgotPass}>
+              <Text style={{textAlign: 'right', color: '#A7A9BC'}}>
+                Quên mật khẩu?
+              </Text>
             </TouchableOpacity>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                marginVertical: 32,
+                alignItems: 'center',
+              }}>
+              <Text>Chưa có tài khoản? </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate('RegisterScreen', {
+                    getPassword: this.getPassword,
+                  })
+                }>
+                <Text style={styles.labelRegister}>Đăng ký tại đây</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
         <View
@@ -269,7 +309,7 @@ const styles = StyleSheet.create({
   },
   appName: {fontSize: 18, marginTop: 16, fontWeight: 'bold'},
   labelLogin: {fontSize: 16, color: '#FFF', textTransform: 'uppercase'},
-  labelRegister: {color: '#00c068', marginVertical: 8, fontSize: 16},
+  labelRegister: {color: '#00c068', fontSize: 16},
 });
 
 const matchDispatchToProps = dispatch => {

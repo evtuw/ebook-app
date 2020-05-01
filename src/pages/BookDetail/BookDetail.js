@@ -61,15 +61,15 @@ class BookDetail extends Component {
       });
       const allPromise = [
         this.getBookByCategory(response.data[0]?.category_id),
-        this.getBookByAuthor(response.data[0].author_id),
+        this.getBookByAuthor(response.data[0]?.author_id),
       ];
       const [book_cate, book_author] = await Promise.all(allPromise);
       this.setState({
         data: response.data[0],
-        book_author: book_author.data.filter(
+        book_author: book_author.data?.filter(
           t => t.id !== response.data[0]?.id,
         ),
-        book_cate: book_cate.data.filter(v => v.id !== response.data[0]?.id),
+        book_cate: book_cate.data?.filter(v => v.id !== response.data[0]?.id),
       });
     } catch (e) {
       console.log(e);

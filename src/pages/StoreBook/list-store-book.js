@@ -94,7 +94,7 @@ class ListStoreBook extends PureComponent {
       const response = await getFromServer(getApiUrl(API.GET_OTHER_STORE), {
         token: accountInfo.access_token.token,
         page,
-        page_size: 16,
+        page_size: 50,
       });
       if (response.status === 1) {
         this.setState({

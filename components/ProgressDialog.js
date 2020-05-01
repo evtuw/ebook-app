@@ -11,7 +11,7 @@ import {
 const changeStatusBar = visible => {
   if (Platform.OS === 'android') {
     if (visible) {
-      StatusBar.setBackgroundColor('#CCC', true);
+      StatusBar.setBackgroundColor('white', true);
     } else {
       StatusBar.setBackgroundColor('white', true);
     }

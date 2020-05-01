@@ -26,7 +26,7 @@ class BookByCategory extends PureComponent {
       const response = await getFromServer(getApiUrl(API.CATEGORY_BOOK_LIST), {
         token: accountInfo.access_token.token,
         page: 1,
-        page_size: 16,
+        page_size: 50,
         cat_id,
       });
       this.setState({data: response.data, total: response.total});
